@@ -1,0 +1,56 @@
+:root {
+  --bg-base:     0 0% 100%;
+  --bg-surface:  0 0% 97%;
+  --bg-elevated: 0 0% 94%;
+  --fg-primary:  222 47% 11%;
+  --fg-secondary: 215 16% 47%;
+  --fg-muted:    215 16% 65%;
+  --accent:      250 84% 67%;
+  --accent-2:    199 89% 60%;
+  --accent-foreground: 0 0% 100%;
+  --border:      214 13% 88%;
+  --border-strong: 214 13% 78%;
+  --destructive: 0 84% 60%;
+  --success:     142 71% 45%;
+  --warning:     38 92% 50%;
+
+  /* Life area colors */
+  --area-discipline: 250 84% 67%;
+  --area-focus:      271 76% 65%;
+  --area-learning:   199 89% 60%;
+  --area-career:     142 71% 45%;
+  --area-health:     0 84% 60%;
+  --area-mental:     38 92% 50%;
+  --area-social:     330 81% 60%;
+  --area-financial:  174 72% 46%;
+
+  /* ShadCN-compatible vars */
+  --background: var(--bg-base);
+  --foreground: var(--fg-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--fg-primary);
+  --popover: var(--bg-base);
+  --popover-foreground: var(--fg-primary);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --secondary: var(--bg-elevated);
+  --secondary-foreground: var(--fg-primary);
+  --muted: var(--bg-elevated);
+  --muted-foreground: var(--fg-secondary);
+  --ring: var(--accent);
+  --radius: 0.625rem;
+}
+
+.dark {
+  --bg-base:    222 47% 6%;
+  --bg-surface: 222 40% 10%;
+  --bg-elevated: 222 35% 14%;
+  --fg-primary: 210 40% 96%;
+  --fg-secondary: 215 20% 65%;
+  --fg-muted:   215 16% 45%;
+  --accent:     252 94% 72%;
+  --accent-2:   199 89% 65%;
+  --border:     222 30% 18%;
+  --border-strong: 222 30% 26%;
+}
+

@@ -1,0 +1,143 @@
+"use client";
+import { useState } from "react";
+import { CheckCircle2, Circle, Pencil, Trash2, Trophy } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { ProgressRing } from "./ProgressRing";
+import { LIFE_AREAS } from "@/types";
+import type { Goal } from "@/types";
+
+const PRIORITY_LABEL: Record<number, string> = { 1: "Low", 2: "Medium", 3: "High" };
+const PRIORITY_COLOR: Record<number, string> = {
+  1: "bg-[hsl(var(--fg-secondary)/0.15)] text-[hsl(var(--fg-secondary))]",
+  2: "bg-[hsl(var(--area-learning)/0.15)] text-[hsl(var(--area-learning))]",
+  3: "bg-[hsl(var(--area-health)/0.15)] text-[hsl(var(--area-health))]",
+};
+
+interface GoalCardProps {
+  goal: Goal;
+  onEdit: (goal: Goal) => void;
+  onDelete: (id: number) => void;
+  onComplete: (id: number) => void;
+  onCompleteMilestone: (goalId: number, milestoneId: number) => void;
+}
+
+export function GoalCard({ goal, onEdit, onDelete, onComplete, onCompleteMilestone }: GoalCardProps) {
+  const [showMilestones, setShowMilestones] = useState(false);
+  const area = LIFE_AREAS.find((a) => a.id === goal.life_area_id);
+  const isComplete = goal.status === "completed";
+  const completedMs = goal.milestones.filter((m) => m.is_completed).length;
+
+  return (
+    <div
+      className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 flex flex-col gap-3"
+      style={{ borderLeftColor: area?.color, borderLeftWidth: 3 }}
+    >
+      {/* Header row */}
+      <div className="flex items-start gap-3">
+        <ProgressRing
+          progress={goal.progress_pct}
+          size={56}
+          strokeWidth={5}
+          color={area?.color ?? "hsl(var(--accent))"}
+          label={`${Math.round(goal.progress_pct)}%`}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-[hsl(var(--fg-primary))] truncate">{goal.title}</span>
+            {isComplete && <Trophy size={14} className="text-[hsl(var(--area-career))] shrink-0" />}
+          </div>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            {area && (
+              <span className="text-xs" style={{ color: area.color }}>
+                {area.name}
+              </span>
+            )}
+            <span className={`text-xs rounded px-1.5 py-0.5 ${PRIORITY_COLOR[goal.priority]}`}>
+              {PRIORITY_LABEL[goal.priority] ?? "Medium"}
+            </span>
+            {goal.target_date && (
+              <span className="text-xs text-[hsl(var(--fg-secondary))]">
+                Due {format(parseISO(goal.target_date), "MMM d, yyyy")}
+              </span>
+            )}
+          </div>
+        </div>
+        {/* Actions */}
+        {!isComplete && (
+          <div className="flex gap-1 shrink-0">
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEdit(goal)}>
+              <Pencil size={13} />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 text-[hsl(var(--area-health))] hover:text-[hsl(var(--area-health))]"
+              onClick={() => onDelete(goal.id)}
+            >
+              <Trash2 size={13} />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <Progress value={goal.progress_pct} className="h-1.5" />
+
+      {/* Description / Why */}
+      {goal.description && (
+        <p className="text-xs text-[hsl(var(--fg-secondary))] line-clamp-2">{goal.description}</p>
+      )}
+
+      {/* Milestones toggle */}
+      {goal.milestones.length > 0 && (
+        <div>
+          <button
+            className="text-xs text-[hsl(var(--fg-secondary))] hover:text-[hsl(var(--fg-primary))] transition-colors"
+            onClick={() => setShowMilestones((v) => !v)}
+          >
+            {completedMs}/{goal.milestones.length} milestones {showMilestones ? "▲" : "▼"}
+          </button>
+          {showMilestones && (
+            <ul className="mt-2 flex flex-col gap-1">
+              {goal.milestones.map((m) => (
+                <li key={m.id} className="flex items-center gap-2">
+                  <button
+                    disabled={m.is_completed || isComplete}
+                    onClick={() => onCompleteMilestone(goal.id, m.id)}
+                    className="text-[hsl(var(--fg-secondary))] disabled:opacity-50"
+                  >
+                    {m.is_completed ? (
+                      <CheckCircle2 size={14} className="text-[hsl(var(--area-career))]" />
+                    ) : (
+                      <Circle size={14} />
+                    )}
+                  </button>
+                  <span
+                    className={`text-xs ${m.is_completed ? "line-through text-[hsl(var(--fg-secondary))]" : "text-[hsl(var(--fg-primary))]"}`}
+                  >
+                    {m.title}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Footer */}
+      {!isComplete && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-1 self-end text-xs h-7"
+          onClick={() => onComplete(goal.id)}
+        >
+          <Trophy size={12} className="mr-1" /> Mark complete
+        </Button>
+      )}
+    </div>
+  );
+}

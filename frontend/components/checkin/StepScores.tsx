@@ -1,0 +1,82 @@
+"use client";
+import { Slider } from "@/components/ui/slider";
+import { LIFE_AREAS } from "@/types";
+
+type ScoreKey =
+  | "score_discipline"
+  | "score_focus"
+  | "score_learning"
+  | "score_career"
+  | "score_health"
+  | "score_mental"
+  | "score_social"
+  | "score_financial";
+
+const AREA_FIELD_MAP: Record<string, ScoreKey> = {
+  discipline: "score_discipline",
+  focus: "score_focus",
+  learning: "score_learning",
+  career: "score_career",
+  health: "score_health",
+  mental: "score_mental",
+  social: "score_social",
+  financial: "score_financial",
+};
+
+export type AreaScores = Record<ScoreKey, number>;
+
+interface StepScoresProps {
+  scores: AreaScores;
+  onChange: (scores: AreaScores) => void;
+}
+
+export function StepScores({ scores, onChange }: StepScoresProps) {
+  const handleChange = (slug: string, value: number) => {
+    const field = AREA_FIELD_MAP[slug];
+    onChange({ ...scores, [field]: value });
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Rate each area of your life from 1 (struggling) to 10 (thriving).
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+        {LIFE_AREAS.map((area) => {
+          const field = AREA_FIELD_MAP[area.slug];
+          const value = scores[field] ?? 5;
+          return (
+            <div key={area.slug} className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: area.color }}
+                  />
+                  <span className="text-sm font-medium">{area.name}</span>
+                </div>
+                <span
+                  className="text-sm font-bold tabular-nums w-5 text-right"
+                  style={{ color: area.color }}
+                >
+                  {value}
+                </span>
+              </div>
+              <Slider
+                value={value}
+                onChange={(v) => handleChange(area.slug, v)}
+                min={1}
+                max={10}
+                color={area.color}
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground select-none">
+                <span>Struggling</span>
+                <span>Thriving</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
