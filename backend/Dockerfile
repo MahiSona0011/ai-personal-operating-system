@@ -12,9 +12,5 @@ COPY . .
 RUN chown -R aipos:aipos /app
 USER aipos
 EXPOSE 8000
-CMD ["gunicorn", "app.main:app", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
-     "--workers", "2", \
-     "--bind", "0.0.0.0:8000", \
-     "--timeout", "30", \
-     "--graceful-timeout", "10"]
+# Apply migrations, then serve. Hosts like Render set $PORT and WEB_CONCURRENCY (free tier: 512 MB, so 1 worker).
+CMD ["sh", "-c", "alembic upgrade head && exec gunicorn app.main:app --worker-class uvicorn.workers.UvicornWorker --workers ${WEB_CONCURRENCY:-2} --bind 0.0.0.0:${PORT:-8000} --timeout 30 --graceful-timeout 10"]
