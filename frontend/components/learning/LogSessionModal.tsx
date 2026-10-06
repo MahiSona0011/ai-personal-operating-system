@@ -104,7 +104,7 @@ export function LogSessionModal({ open, onClose, onSubmit, isLoading }: LogSessi
           {/* Area + Type row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-sm text-[hsl(var(--fg-secondary))]">Life Area</label>
+              <label className="text-sm text-fg-secondary">Life Area</label>
               <Select
                 value={String(selectedArea)}
                 onValueChange={(v) => setValue("life_area_id", Number(v))}
@@ -122,7 +122,7 @@ export function LogSessionModal({ open, onClose, onSubmit, isLoading }: LogSessi
               </Select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm text-[hsl(var(--fg-secondary))]">Type</label>
+              <label className="text-sm text-fg-secondary">Type</label>
               <Select value={selectedType} onValueChange={(v) => setValue("session_type", v)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -140,27 +140,27 @@ export function LogSessionModal({ open, onClose, onSubmit, isLoading }: LogSessi
 
           {/* Title */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-[hsl(var(--fg-secondary))]">What did you work on?</label>
+            <label className="text-sm text-fg-secondary">What did you work on?</label>
             <Input placeholder="Session title..." {...register("title")} />
-            {errors.title && <p className="text-xs text-[hsl(var(--area-health))]">{errors.title.message}</p>}
+            {errors.title && <p className="text-xs text-destructive-fg">{errors.title.message}</p>}
           </div>
 
           {/* Start time + Duration */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-sm text-[hsl(var(--fg-secondary))]">Started at</label>
+              <label className="text-sm text-fg-secondary">Started at</label>
               <Input type="datetime-local" {...register("started_at")} />
-              {errors.started_at && <p className="text-xs text-[hsl(var(--area-health))]">{errors.started_at.message}</p>}
+              {errors.started_at && <p className="text-xs text-destructive-fg">{errors.started_at.message}</p>}
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm text-[hsl(var(--fg-secondary))]">Duration (min)</label>
+              <label className="text-sm text-fg-secondary">Duration (min)</label>
               <Input type="number" min={1} max={1440} placeholder="60" {...register("duration_minutes")} />
             </div>
           </div>
 
           {/* Quality rating */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-[hsl(var(--fg-secondary))]">Quality (optional)</label>
+            <label className="text-sm text-fg-secondary">Quality (optional)</label>
             <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button
@@ -169,8 +169,8 @@ export function LogSessionModal({ open, onClose, onSubmit, isLoading }: LogSessi
                   onClick={() => setValue("quality_rating", n)}
                   className={`h-8 w-8 rounded-full text-sm font-medium border transition-colors ${
                     selectedQuality === n
-                      ? "bg-[hsl(var(--accent))] text-white border-[hsl(var(--accent))]"
-                      : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))] hover:border-[hsl(var(--accent))]"
+                      ? "bg-accent-solid text-accent-foreground border-accent"
+                      : "border-border text-fg-secondary hover:border-accent"
                   }`}
                 >
                   {n}
@@ -181,7 +181,7 @@ export function LogSessionModal({ open, onClose, onSubmit, isLoading }: LogSessi
 
           {/* Notes */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-[hsl(var(--fg-secondary))]">Notes (optional)</label>
+            <label className="text-sm text-fg-secondary">Notes (optional)</label>
             <Input placeholder="What did you accomplish?" {...register("notes")} />
           </div>
 

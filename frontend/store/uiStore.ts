@@ -7,8 +7,10 @@ interface UIState {
   toggleSidebar: () => void;
 }
 
+const isMobile = () => typeof window !== "undefined" && window.innerWidth < 768;
+
 export const useUIStore = create<UIState>((set) => ({
-  sidebarOpen: true,
+  sidebarOpen: !isMobile(),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 }));

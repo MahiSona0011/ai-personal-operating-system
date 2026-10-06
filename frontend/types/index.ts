@@ -7,6 +7,9 @@ export interface User {
   avatar_url: string | null;
   onboarding_state: "pending" | "complete";
   preferences: Record<string, unknown> | null;
+  email_verified_at: string | null;
+  theme_preference: "system" | "light" | "dark";
+  digest_enabled: boolean;
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -23,14 +26,12 @@ export interface Checkin {
   id: number;
   user_id: number;
   checkin_date: string;
-  score_discipline: number | null;
-  score_focus: number | null;
-  score_learning: number | null;
-  score_career: number | null;
   score_health: number | null;
-  score_mental: number | null;
-  score_social: number | null;
-  score_financial: number | null;
+  score_mind: number | null;
+  score_relationships: number | null;
+  score_work: number | null;
+  score_money: number | null;
+  score_growth: number | null;
   overall_score: number | null;
   mood: number | null;
   energy: number | null;
@@ -101,16 +102,8 @@ export interface Milestone {
   created_at: string;
 }
 
-export const LIFE_AREAS = [
-  { id: 1, slug: "discipline", name: "Discipline", icon: "shield", color: "hsl(var(--area-discipline))" },
-  { id: 2, slug: "focus", name: "Focus", icon: "crosshair", color: "hsl(var(--area-focus))" },
-  { id: 3, slug: "learning", name: "Learning", icon: "book-open", color: "hsl(var(--area-learning))" },
-  { id: 4, slug: "career", name: "Career", icon: "briefcase", color: "hsl(var(--area-career))" },
-  { id: 5, slug: "health", name: "Health", icon: "heart", color: "hsl(var(--area-health))" },
-  { id: 6, slug: "mental", name: "Mental", icon: "brain", color: "hsl(var(--area-mental))" },
-  { id: 7, slug: "social", name: "Social", icon: "users", color: "hsl(var(--area-social))" },
-  { id: 8, slug: "financial", name: "Financial", icon: "trending-up", color: "hsl(var(--area-financial))" },
-] as const;
+// The area list lives in lib/areas.ts; this alias keeps existing imports working.
+export { AREAS as LIFE_AREAS } from "@/lib/areas";
 
 export interface HabitLogEntry {
   log_date: string;
@@ -182,7 +175,7 @@ export interface WeeklyReview {
   created_at: string;
 }
 
-export type LifeAreaSlug = (typeof LIFE_AREAS)[number]["slug"];
+export type { AreaKey as LifeAreaSlug } from "@/lib/areas";
 
 export interface JournalEntry {
   id: number;
@@ -195,6 +188,8 @@ export interface JournalEntry {
   ai_summary: string | null;
   ai_themes: string[] | null;
   ai_sentiment: string | null;
+  /** pending = queued; skipped = too short or the daily AI limit was reached */
+  ai_status: "pending" | "completed" | "failed" | "skipped" | null;
   created_at: string;
   updated_at: string;
 }
@@ -213,25 +208,6 @@ export interface Metric {
 
 export const METRIC_KEYS: Record<number, { key: string; label: string; defaultUnit: string }[]> = {
   1: [
-    { key: "habits_completed", label: "Habits Completed", defaultUnit: "count" },
-    { key: "streak_days", label: "Streak Days", defaultUnit: "days" },
-  ],
-  2: [
-    { key: "deep_work_hours", label: "Deep Work Hours", defaultUnit: "hours" },
-    { key: "pomodoros", label: "Pomodoros", defaultUnit: "count" },
-    { key: "distractions", label: "Distractions", defaultUnit: "count" },
-  ],
-  3: [
-    { key: "pages_read", label: "Pages Read", defaultUnit: "pages" },
-    { key: "study_hours", label: "Study Hours", defaultUnit: "hours" },
-    { key: "courses_completed", label: "Courses Completed", defaultUnit: "count" },
-  ],
-  4: [
-    { key: "tasks_completed", label: "Tasks Completed", defaultUnit: "count" },
-    { key: "applications_sent", label: "Applications Sent", defaultUnit: "count" },
-    { key: "meetings", label: "Meetings", defaultUnit: "count" },
-  ],
-  5: [
     { key: "weight", label: "Weight", defaultUnit: "kg" },
     { key: "sleep_hours", label: "Sleep Hours", defaultUnit: "hours" },
     { key: "steps", label: "Steps", defaultUnit: "steps" },
@@ -239,20 +215,35 @@ export const METRIC_KEYS: Record<number, { key: string; label: string; defaultUn
     { key: "water_ml", label: "Water Intake", defaultUnit: "ml" },
     { key: "heart_rate", label: "Resting Heart Rate", defaultUnit: "bpm" },
   ],
-  6: [
+  2: [
     { key: "stress_level", label: "Stress Level", defaultUnit: "1–10" },
     { key: "mood_score", label: "Mood Score", defaultUnit: "1–10" },
     { key: "meditation_minutes", label: "Meditation", defaultUnit: "min" },
   ],
-  7: [
-    { key: "social_hours", label: "Social Hours", defaultUnit: "hours" },
+  3: [
+    { key: "social_hours", label: "Time with People", defaultUnit: "hours" },
     { key: "connections_made", label: "Connections Made", defaultUnit: "count" },
   ],
-  8: [
+  4: [
+    { key: "deep_work_hours", label: "Deep Work Hours", defaultUnit: "hours" },
+    { key: "pomodoros", label: "Pomodoros", defaultUnit: "count" },
+    { key: "distractions", label: "Distractions", defaultUnit: "count" },
+    { key: "habits_completed", label: "Habits Completed", defaultUnit: "count" },
+    { key: "streak_days", label: "Streak Days", defaultUnit: "days" },
+    { key: "tasks_completed", label: "Tasks Completed", defaultUnit: "count" },
+    { key: "applications_sent", label: "Applications Sent", defaultUnit: "count" },
+    { key: "meetings", label: "Meetings", defaultUnit: "count" },
+  ],
+  5: [
     { key: "savings", label: "Savings", defaultUnit: "USD" },
     { key: "expenses", label: "Expenses", defaultUnit: "USD" },
     { key: "income", label: "Income", defaultUnit: "USD" },
     { key: "investments", label: "Investments", defaultUnit: "USD" },
+  ],
+  6: [
+    { key: "pages_read", label: "Pages Read", defaultUnit: "pages" },
+    { key: "study_hours", label: "Study Hours", defaultUnit: "hours" },
+    { key: "courses_completed", label: "Courses Completed", defaultUnit: "count" },
   ],
 };
 

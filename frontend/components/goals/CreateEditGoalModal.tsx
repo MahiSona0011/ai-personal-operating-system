@@ -79,7 +79,7 @@ export function CreateEditGoalModal({
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           {/* Life area */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-[hsl(var(--fg-secondary))]">Life Area</label>
+            <label className="text-sm text-fg-secondary">Life Area</label>
             <Select
               value={String(selectedArea)}
               onValueChange={(v) => setValue("life_area_id", Number(v))}
@@ -95,32 +95,32 @@ export function CreateEditGoalModal({
                 ))}
               </SelectContent>
             </Select>
-            {errors.life_area_id && <p className="text-xs text-[hsl(var(--area-health))]">{errors.life_area_id.message}</p>}
+            {errors.life_area_id && <p className="text-xs text-destructive-fg">{errors.life_area_id.message}</p>}
           </div>
 
           {/* Title */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-[hsl(var(--fg-secondary))]">Title</label>
+            <label className="text-sm text-fg-secondary">Title</label>
             <Input placeholder="What do you want to achieve?" {...register("title")} />
-            {errors.title && <p className="text-xs text-[hsl(var(--area-health))]">{errors.title.message}</p>}
+            {errors.title && <p className="text-xs text-destructive-fg">{errors.title.message}</p>}
           </div>
 
           {/* Why */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-[hsl(var(--fg-secondary))]">Why this matters</label>
+            <label className="text-sm text-fg-secondary">Why this matters</label>
             <Input placeholder="Your deeper reason..." {...register("why")} />
           </div>
 
           {/* Description */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm text-[hsl(var(--fg-secondary))]">Description (optional)</label>
+            <label className="text-sm text-fg-secondary">Description (optional)</label>
             <Input placeholder="Additional context..." {...register("description")} />
           </div>
 
           {/* Priority + target date */}
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label className="text-sm text-[hsl(var(--fg-secondary))]">Priority</label>
+              <label className="text-sm text-fg-secondary">Priority</label>
               <Select
                 value={String(selectedPriority)}
                 onValueChange={(v) => setValue("priority", Number(v))}
@@ -136,7 +136,7 @@ export function CreateEditGoalModal({
               </Select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm text-[hsl(var(--fg-secondary))]">Target date</label>
+              <label className="text-sm text-fg-secondary">Target date</label>
               <Input type="date" {...register("target_date")} />
             </div>
           </div>

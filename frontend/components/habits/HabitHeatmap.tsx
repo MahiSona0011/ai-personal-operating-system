@@ -65,7 +65,8 @@ export function HabitHeatmap({ logs, targetCount, color }: HabitHeatmapProps) {
   const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
   return (
-    <div className="relative">
+    <div className="overflow-x-auto pb-1">
+    <div className="relative min-w-max">
       <div className="flex gap-1">
         {/* Day labels */}
         <div className="flex flex-col gap-1 mr-1">
@@ -106,6 +107,7 @@ export function HabitHeatmap({ logs, targetCount, color }: HabitHeatmapProps) {
           {tooltip.count > 0 && ` · ${tooltip.count}×`}
         </div>
       )}
+    </div>
     </div>
   );
 }

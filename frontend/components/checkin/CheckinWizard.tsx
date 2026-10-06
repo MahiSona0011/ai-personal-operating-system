@@ -10,21 +10,19 @@ import { StepReview } from "./StepReview";
 import type { Checkin } from "@/types";
 
 const STEPS = [
-  { label: "Life Areas", description: "Rate each of your 8 life areas" },
+  { label: "Life Areas", description: "Rate each of your six life areas" },
   { label: "Mood & Energy", description: "How are you feeling today?" },
   { label: "Reflections", description: "Wins, blockers, and next actions" },
   { label: "Review", description: "Confirm and get AI analysis" },
 ];
 
 const DEFAULT_SCORES: AreaScores = {
-  score_discipline: 5,
-  score_focus: 5,
-  score_learning: 5,
-  score_career: 5,
   score_health: 5,
-  score_mental: 5,
-  score_social: 5,
-  score_financial: 5,
+  score_mind: 5,
+  score_relationships: 5,
+  score_work: 5,
+  score_money: 5,
+  score_growth: 5,
 };
 
 interface CheckinWizardProps {
@@ -44,7 +42,6 @@ export function CheckinWizard({
 }: CheckinWizardProps) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [error, setError] = useState<string | null>(null);
 
   const [scores, setScores] = useState<AreaScores>(DEFAULT_SCORES);
   const [mood, setMood] = useState(5);
@@ -57,14 +54,12 @@ export function CheckinWizard({
   useEffect(() => {
     if (!checkin) return;
     setScores({
-      score_discipline: checkin.score_discipline ?? 5,
-      score_focus: checkin.score_focus ?? 5,
-      score_learning: checkin.score_learning ?? 5,
-      score_career: checkin.score_career ?? 5,
       score_health: checkin.score_health ?? 5,
-      score_mental: checkin.score_mental ?? 5,
-      score_social: checkin.score_social ?? 5,
-      score_financial: checkin.score_financial ?? 5,
+      score_mind: checkin.score_mind ?? 5,
+      score_relationships: checkin.score_relationships ?? 5,
+      score_work: checkin.score_work ?? 5,
+      score_money: checkin.score_money ?? 5,
+      score_growth: checkin.score_growth ?? 5,
     });
     setMood(checkin.mood ?? 5);
     setEnergy(checkin.energy ?? 5);
@@ -82,14 +77,14 @@ export function CheckinWizard({
     action_plan: actionPlan,
   });
 
+  // A failed save is reported by the app-wide error toast (see lib/query-client.ts); we just stay on this step.
   const handleNext = async () => {
-    setError(null);
     try {
       await onSave(buildPayload());
       setDirection(1);
       setStep((s) => s + 1);
     } catch {
-      setError("Failed to save. Please try again.");
+      /* stay on the step so nothing typed is lost */
     }
   };
 
@@ -99,12 +94,11 @@ export function CheckinWizard({
   };
 
   const handleComplete = async () => {
-    setError(null);
     try {
       await onSave(buildPayload());
       await onComplete();
     } catch {
-      setError("Failed to complete check-in. Please try again.");
+      /* the error toast says what failed; stay on the last step so the user can retry */
     }
   };
 
@@ -206,11 +200,6 @@ export function CheckinWizard({
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {/* Error */}
-      {error && (
-        <p className="mt-3 text-sm text-destructive text-center">{error}</p>
-      )}
 
       {/* Navigation */}
       {step < STEPS.length - 1 && (

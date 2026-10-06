@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from app.api.deps import CurrentUser, DB
+from app.api.deps import CurrentUser, DB, ensure_life_area
 from app.models.goal import Goal, Milestone
 from app.schemas.goal import (
     GoalResponse, CreateGoalRequest, UpdateGoalRequest,
@@ -35,6 +35,7 @@ async def list_goals(current_user: CurrentUser, db: DB):
 
 @router.post("", response_model=GoalResponse, status_code=status.HTTP_201_CREATED)
 async def create(data: CreateGoalRequest, current_user: CurrentUser, db: DB):
+    await ensure_life_area(db, data.life_area_id)
     goal = Goal(user_id=current_user.id, **data.model_dump())
     db.add(goal)
     await db.flush()
@@ -79,29 +80,46 @@ async def add_milestone(goal_id: int, data: CreateMilestoneRequest, current_user
     return milestone
 
 
-@router.post("/{goal_id}/milestones/{milestone_id}/complete", response_model=MilestoneResponse)
-async def complete_milestone(goal_id: int, milestone_id: int, current_user: CurrentUser, db: DB):
+async def _milestone_or_404(db, user_id: int, goal_id: int, milestone_id: int) -> Milestone:
     milestone = await db.scalar(
         select(Milestone).where(
             Milestone.id == milestone_id,
             Milestone.goal_id == goal_id,
-            Milestone.user_id == current_user.id,
+            Milestone.user_id == user_id,
         )
     )
     if not milestone:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
+    return milestone
 
+
+async def _recompute_progress(db, user_id: int, goal_id: int) -> None:
+    """Goal progress = share of its milestones that are done (unchanged when it has none)."""
+    goal = await _get_goal_or_404(db, user_id, goal_id)
+    rows = await db.scalars(select(Milestone).where(Milestone.goal_id == goal_id, Milestone.deleted_at.is_(None)))
+    milestones = list(rows.all())
+    if milestones:
+        done = sum(1 for m in milestones if m.is_completed)
+        goal.progress_pct = round(done / len(milestones) * 100, 2)
+        await db.flush()
+
+
+@router.post("/{goal_id}/milestones/{milestone_id}/complete", response_model=MilestoneResponse)
+async def complete_milestone(goal_id: int, milestone_id: int, current_user: CurrentUser, db: DB):
+    milestone = await _milestone_or_404(db, current_user.id, goal_id, milestone_id)
     milestone.is_completed = True
     milestone.completed_at = datetime.now(timezone.utc)
     await db.flush()
+    await _recompute_progress(db, current_user.id, goal_id)
+    return milestone
 
-    # Recompute goal progress
-    goal = await _get_goal_or_404(db, current_user.id, goal_id)
-    all_milestones = await db.scalars(select(Milestone).where(Milestone.goal_id == goal_id, Milestone.deleted_at.is_(None)))
-    ms_list = list(all_milestones.all())
-    if ms_list:
-        completed_count = sum(1 for m in ms_list if m.is_completed)
-        goal.progress_pct = round(completed_count / len(ms_list) * 100, 2)
-        await db.flush()
 
+@router.post("/{goal_id}/milestones/{milestone_id}/uncomplete", response_model=MilestoneResponse)
+async def uncomplete_milestone(goal_id: int, milestone_id: int, current_user: CurrentUser, db: DB):
+    """Undo for completing a milestone."""
+    milestone = await _milestone_or_404(db, current_user.id, goal_id, milestone_id)
+    milestone.is_completed = False
+    milestone.completed_at = None
+    await db.flush()
+    await _recompute_progress(db, current_user.id, goal_id)
     return milestone

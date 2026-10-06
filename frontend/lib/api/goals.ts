@@ -25,4 +25,8 @@ export const goalsApi = {
 
   completeMilestone: (goalId: number, milestoneId: number) =>
     apiClient.post<Milestone>(`/goals/${goalId}/milestones/${milestoneId}/complete`).then((r) => r.data),
+
+  /** Undo for completeMilestone. */
+  uncompleteMilestone: (goalId: number, milestoneId: number) =>
+    apiClient.post<Milestone>(`/goals/${goalId}/milestones/${milestoneId}/uncomplete`).then((r) => r.data),
 };

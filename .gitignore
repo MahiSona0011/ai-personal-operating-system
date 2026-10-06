@@ -9,6 +9,7 @@ dist/
 
 # Environment
 .env
+.env.*
 !.env.example
 
 # Node
@@ -32,3 +33,15 @@ backend/alembic/versions/*.pyc
 *.key
 credentials.json
 token.json
+
+# local dependency dir (venv launcher is broken on this machine)
+backend/.pydeps/
+
+# test output
+.coverage
+htmlcov/
+frontend/coverage/
+frontend/e2e/.results/
+frontend/e2e/.report/
+frontend/test-results/
+frontend/playwright-report/

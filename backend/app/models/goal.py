@@ -3,12 +3,13 @@ from typing import Optional
 from sqlalchemy import String, Text, SmallInteger, BigInteger, Date, DateTime, Numeric, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
+from app.models.base import PK_TYPE
 
 
 class Goal(Base, TimestampMixin):
     __tablename__ = "goals"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(PK_TYPE, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     life_area_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("life_areas.id"), nullable=False)
     title: Mapped[str] = mapped_column(String(500), nullable=False)
@@ -27,7 +28,7 @@ class Goal(Base, TimestampMixin):
 class Milestone(Base, TimestampMixin):
     __tablename__ = "milestones"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(PK_TYPE, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     goal_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("goals.id", ondelete="CASCADE"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(500), nullable=False)

@@ -1,6 +1,7 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { checkinsApi } from "@/lib/api/checkins";
+import { invalidateInsights } from "./invalidate";
 import type { Checkin } from "@/types";
 
 export function useCheckinWizard() {
@@ -17,14 +18,16 @@ export function useCheckinWizard() {
     onSuccess: (updated) => {
       queryClient.setQueryData(["checkin", "today"], updated);
     },
+    meta: { errorMessage: "Couldn't save your check-in" },
   });
 
   const completeMutation = useMutation({
     mutationFn: () => checkinsApi.complete(checkin!.id),
     onSuccess: (updated) => {
       queryClient.setQueryData(["checkin", "today"], updated);
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      invalidateInsights(queryClient);
     },
+    meta: { errorMessage: "Couldn't complete your check-in" },
   });
 
   return {

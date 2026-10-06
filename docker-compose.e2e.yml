@@ -1,0 +1,51 @@
+# Backend + database for the Playwright end-to-end tests (used by CI; also works locally):
+#
+#   docker compose -f docker-compose.e2e.yml up --build --detach --wait
+#   cd frontend && NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1 npm run build && npm run test:e2e
+#   docker compose -f docker-compose.e2e.yml down -v
+#
+# Self-contained on purpose: it reads no backend/.env and holds no real credentials.
+#  - AI calls can't leave the machine (ANTHROPIC_BASE_URL points at a closed port).
+#  - Email goes to the mail sink the tests start on the host (port 4010), not to Resend.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: aipos_e2e
+      POSTGRES_USER: e2e
+      POSTGRES_PASSWORD: e2e
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e -d aipos_e2e"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: backend
+      target: runtime
+    ports:
+      - "${E2E_API_PORT:-8000}:8000"
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql+asyncpg://e2e:e2e@db:5432/aipos_e2e
+      SECRET_KEY: e2e-only-secret-key-not-used-anywhere-else-1234
+      CORS_ORIGINS: '["http://localhost:3000"]'
+      FRONTEND_URL: http://localhost:3000
+      RATE_LIMIT_ENABLED: "false"
+      RESEND_API_KEY: re_e2e_mock
+      RESEND_API_URL: http://host.docker.internal:4010
+      ANTHROPIC_API_KEY: sk-ant-e2e-disabled
+      ANTHROPIC_BASE_URL: http://127.0.0.1:9
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 10s

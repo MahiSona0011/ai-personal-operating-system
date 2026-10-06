@@ -2,15 +2,15 @@ import { cn } from "@/lib/utils/cn";
 import { cva, type VariantProps } from "class-variance-authority";
 import { forwardRef } from "react";
 
-const buttonVariants = cva(
+export const buttonVariants = cva(
   "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-accent text-accent-foreground hover:bg-accent/90",
+        default: "bg-accent-solid text-accent-foreground hover:brightness-90",
         outline: "border border-border bg-transparent hover:bg-elevated",
         ghost: "hover:bg-elevated text-muted-foreground hover:text-foreground",
-        destructive: "bg-destructive text-white hover:bg-destructive/90",
+        destructive: "bg-destructive-solid text-white hover:brightness-90",
       },
       size: {
         default: "h-9 px-4 py-2",

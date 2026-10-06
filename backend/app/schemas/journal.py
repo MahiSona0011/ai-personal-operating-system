@@ -3,7 +3,7 @@ from typing import Optional
 from pydantic import BaseModel, field_validator
 
 VALID_MOODS = {"reflecting", "grateful", "anxious", "energized", "frustrated", "neutral", "focused"}
-VALID_AREA_SLUGS = {"discipline", "focus", "learning", "career", "health", "mental", "social", "financial"}
+VALID_AREA_SLUGS = {"health", "mind", "relationships", "work", "money", "growth"}
 
 
 class CreateJournalRequest(BaseModel):
@@ -78,6 +78,7 @@ class JournalEntryResponse(BaseModel):
     ai_summary: Optional[str]
     ai_themes: Optional[list[str]]
     ai_sentiment: Optional[str]
+    ai_status: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

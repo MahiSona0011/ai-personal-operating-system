@@ -1,0 +1,9 @@
+[run]
+# SQLAlchemy's async engine runs queries in greenlets; without this, code after an `await db...` is not traced.
+concurrency = greenlet,thread
+source = app
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:

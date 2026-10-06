@@ -9,6 +9,7 @@ import { WeeklyReviewDetail } from "@/components/reviews/WeeklyReviewDetail";
 import { useWeeklyReviews, useAnalysisMutations } from "@/lib/hooks/useAnalysis";
 import type { WeeklyReview } from "@/types";
 
+import { EmptyState } from "@/components/ui/empty-state";
 export default function ReviewsPage() {
   const thisMonday = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
   const [pickedDate, setPickedDate] = useState(thisMonday);
@@ -43,16 +44,16 @@ export default function ReviewsPage() {
     : null;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="-m-4 flex h-[calc(100vh-3.5rem)] overflow-hidden md:-m-6">
       {/* Left — review list */}
-      <div className="w-80 shrink-0 flex flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--bg-base))]">
+      <div className="w-80 shrink-0 flex flex-col border-r border-border bg-background">
         {/* Header */}
-        <div className="px-4 py-4 border-b border-[hsl(var(--border))]">
+        <div className="px-4 py-4 border-b border-border">
           <div className="flex items-center gap-2 mb-3">
-            <CalendarCheck size={18} className="text-[hsl(var(--fg-secondary))]" />
-            <h1 className="font-semibold text-[hsl(var(--fg-primary))]">Weekly Reviews</h1>
+            <CalendarCheck size={18} className="text-fg-secondary" />
+            <h1 className="font-semibold text-foreground">Weekly Reviews</h1>
             {reviews && (
-              <span className="text-xs text-[hsl(var(--fg-secondary))]">{reviews.length}</span>
+              <span className="text-xs text-fg-secondary">{reviews.length}</span>
             )}
           </div>
 
@@ -60,9 +61,10 @@ export default function ReviewsPage() {
           <div className="flex gap-2">
             <input
               type="date"
+              aria-label="Week to review"
               value={pickedDate}
               onChange={(e) => setPickedDate(e.target.value)}
-              className="flex-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-2.5 py-1.5 text-xs text-[hsl(var(--fg-primary))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--accent))]"
+              className="flex-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <Button
               size="sm"
@@ -75,7 +77,7 @@ export default function ReviewsPage() {
             </Button>
           </div>
           {pickedMonday !== pickedDate && (
-            <p className="text-[10px] text-[hsl(var(--fg-secondary))] mt-1">
+            <p className="text-[10px] text-fg-secondary mt-1">
               Snapped to Monday {format(parseISO(pickedMonday), "MMM d")}
             </p>
           )}
@@ -92,13 +94,12 @@ export default function ReviewsPage() {
           )}
 
           {!isLoading && (!reviews || reviews.length === 0) && (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-4">
-              <CalendarCheck size={32} className="text-[hsl(var(--fg-secondary))]" />
-              <p className="text-sm text-[hsl(var(--fg-secondary))]">No reviews yet</p>
-              <p className="text-xs text-[hsl(var(--fg-secondary))]">
-                Pick a week above and click Generate.
-              </p>
-            </div>
+            <EmptyState
+              icon={CalendarCheck}
+              title="No weekly reviews yet"
+              description="A review summarises your week: scores, habits, wins and one thing to change. Pick a week above and generate it."
+              className="py-10"
+            />
           )}
 
           {reviews?.map((review) => (
@@ -116,8 +117,8 @@ export default function ReviewsPage() {
       <div className="flex-1 overflow-y-auto p-6">
         {!liveSelected && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <CalendarCheck size={40} className="text-[hsl(var(--fg-secondary)/0.4)]" />
-            <p className="text-sm text-[hsl(var(--fg-secondary))]">
+            <CalendarCheck size={40} className="text-fg-secondary/40" />
+            <p className="text-sm text-fg-secondary">
               Select a week to view the full review
             </p>
           </div>

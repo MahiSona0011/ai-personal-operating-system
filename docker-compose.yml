@@ -1,4 +1,26 @@
+# Local development stack: Postgres + API + web app.
+#
+#   docker compose up --build        # then open http://localhost:3000
+#
+# Works on a fresh clone with no .env files. To enable AI analysis and email, copy
+# backend/.env.example to backend/.env and fill in ANTHROPIC_API_KEY / RESEND_API_KEY;
+# it is picked up automatically when present.
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: aipos_dev
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpass
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devuser -d aipos_dev"]
+      interval: 5s
+      retries: 10
+
   backend:
     build:
       context: backend
@@ -8,29 +30,39 @@ services:
     volumes:
       - ./backend/app:/app/app
     env_file:
-      - backend/.env
+      - path: backend/.env
+        required: false
     environment:
       ENVIRONMENT: development
       DEBUG: "true"
+      DATABASE_URL: "postgresql+asyncpg://devuser:devpass@db:5432/aipos_dev"
+      # Local-only default so a fresh clone boots. Real deployments set their own (see README).
+      SECRET_KEY: ${SECRET_KEY:-local-dev-secret-change-me-0123456789abcdef}
+      CORS_ORIGINS: '["http://localhost:3000"]'
+      FRONTEND_URL: http://localhost:3000
     depends_on:
       db:
         condition: service_healthy
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: aipos_dev
-      POSTGRES_USER: devuser
-      POSTGRES_PASSWORD: devpass
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U devuser -d aipos_dev"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 5s
-      retries: 10
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+
+  frontend:
+    build:
+      context: frontend
+      args:
+        # Baked into the browser bundle: the browser, not the container, calls the API.
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+        NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   pg_data:

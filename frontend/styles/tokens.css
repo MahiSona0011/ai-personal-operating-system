@@ -1,28 +1,53 @@
+/*
+ * Design tokens. Every value is an HSL triplet ("H S% L%") so Tailwind can add alpha:
+ *   hsl(var(--token) / <alpha-value>)
+ * See frontend/DESIGN.md for the principles and the usage table.
+ */
 :root {
   --bg-base:     0 0% 100%;
   --bg-surface:  0 0% 97%;
   --bg-elevated: 0 0% 94%;
   --fg-primary:  222 47% 11%;
-  --fg-secondary: 215 16% 47%;
-  --fg-muted:    215 16% 65%;
-  --accent:      250 84% 67%;
+  --fg-secondary: 215.7 15.9% 42%;    /* #5A687C, 4.97:1 on elevated */
+  --fg-muted:    214.7 16.4% 44%;     /* #5E6D83, 4.62:1 on elevated */
+  --accent:      250 84% 67%;         /* rings, focus, decorative */
+  --accent-fg:   249.9 84.9% 60%;     /* accent used as text: #5F42F0, 4.94:1 on accent/10 */
+  --accent-solid: 251.8 76.9% 61%;    /* filled button background: #6D4FE8 */
   --accent-2:    199 89% 60%;
-  --accent-foreground: 0 0% 100%;
+  --accent-foreground: 0 0% 100%;     /* text on accent-solid, 5.34:1 */
   --border:      214 13% 88%;
   --border-strong: 214 13% 78%;
-  --destructive: 0 84% 60%;
-  --success:     142 71% 45%;
-  --warning:     38 92% 50%;
 
-  /* Life area colors */
-  --area-discipline: 250 84% 67%;
-  --area-focus:      271 76% 65%;
-  --area-learning:   199 89% 60%;
-  --area-career:     142 71% 45%;
-  --area-health:     0 84% 60%;
-  --area-mental:     38 92% 50%;
-  --area-social:     330 81% 60%;
-  --area-financial:  174 72% 46%;
+  /* Semantic colours: fill + text variant (the fill is too light to read as text on light surfaces) */
+  --destructive:    0 84% 60%;
+  --destructive-fg: 0 84.3% 42.5%;    /* #C81111 */
+  --destructive-solid: 0 72% 45%;     /* filled destructive button, white text 6:1 (both modes) */
+  --success:        142 71% 45%;
+  --success-fg:     142.1 70.7% 27.4%; /* #147739 */
+  --warning:        38 92% 50%;
+  --warning-fg:     38.1 92.5% 29.4%; /* #905E06 */
+
+  /* Life areas: fill for dots, borders and bars; -fg for text */
+  --area-health:        0 84% 60%;
+  --area-mind:          38 92% 50%;
+  --area-relationships: 330 81% 60%;
+  --area-work:          142 71% 45%;
+  --area-money:         174 72% 46%;
+  --area-growth:        199 89% 60%;
+  --area-health-fg:        0 84.3% 42.5%;
+  --area-mind-fg:          38.1 92.5% 29.4%;
+  --area-relationships-fg: 330.2 81.3% 41.6%;
+  --area-work-fg:          142.1 70.7% 27.4%;
+  --area-money-fg:         174.3 72.4% 26.4%;
+  --area-growth-fg:        199.2 88.8% 33.1%;
+
+  /* Charts (triplets; apply alpha where needed, e.g. hsl(var(--chart-grid) / 0.6)) */
+  --chart-grid:       var(--border);
+  --chart-axis:       var(--fg-muted);
+  --chart-tooltip-bg: var(--bg-elevated);
+  --chart-score:      var(--accent);
+  --chart-mood:       var(--area-relationships);
+  --chart-energy:     var(--area-mind);
 
   /* ShadCN-compatible vars */
   --background: var(--bg-base);
@@ -47,10 +72,26 @@
   --bg-elevated: 222 35% 14%;
   --fg-primary: 210 40% 96%;
   --fg-secondary: 215 20% 65%;
-  --fg-muted:   215 16% 45%;
+  --fg-muted:   213.8 15.9% 55%;      /* #7A8A9E, 4.67:1 on elevated */
   --accent:     252 94% 72%;
+  --accent-fg:  var(--accent);
   --accent-2:   199 89% 65%;
   --border:     222 30% 18%;
   --border-strong: 222 30% 26%;
-}
 
+  /* On the dark base every fill is already >= 4.5:1, so the text variant is the fill */
+  --destructive:    0 84% 62%;
+  --destructive-fg: 0 84% 70%;        /* lighter than the fill so it passes on its own /15 tint */
+  --destructive-solid: 0 72% 45%;
+  --success:        142 69% 52%;
+  --success-fg:     var(--success);
+  --warning:        38 92% 55%;
+  --warning-fg:     var(--warning);
+
+  --area-health-fg:        var(--destructive-fg);
+  --area-mind-fg:          var(--area-mind);
+  --area-relationships-fg: var(--area-relationships);
+  --area-work-fg:          var(--area-work);
+  --area-money-fg:         var(--area-money);
+  --area-growth-fg:        var(--area-growth);
+}

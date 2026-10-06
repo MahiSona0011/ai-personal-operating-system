@@ -95,7 +95,7 @@ export function CreateEditHabitModal({
               autoFocus
             />
             {errors.title && (
-              <p className="text-xs text-destructive">{errors.title.message}</p>
+              <p className="text-xs text-destructive-fg">{errors.title.message}</p>
             )}
           </div>
 
@@ -141,7 +141,7 @@ export function CreateEditHabitModal({
                 max={99}
               />
               {errors.target_count && (
-                <p className="text-xs text-destructive">{errors.target_count.message}</p>
+                <p className="text-xs text-destructive-fg">{errors.target_count.message}</p>
               )}
             </div>
           </div>

@@ -3,8 +3,9 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import select
 
-from app.api.deps import CurrentUser, DB
+from app.api.deps import CurrentUser, DB, RangeDays, UserToday
 from app.models.metric import Metric
+from app.services import metric_stats
 from app.schemas.metric import CreateMetricRequest, UpdateMetricRequest, MetricResponse
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
@@ -49,6 +50,20 @@ async def list_metrics(
     return list(result.all())
 
 
+@router.get("/series")
+async def series(
+    current_user: CurrentUser,
+    db: DB,
+    today: UserToday,
+    days: RangeDays,
+    key: str = Query(..., min_length=1, max_length=100),
+    area_id: Optional[int] = Query(None),
+):
+    """One metric over the last `days` days: a point per day with data (entries on a day are
+    averaged), the latest point, the period average and the change against the previous period."""
+    return await metric_stats.metric_series(db, current_user.id, key, area_id, days, today)
+
+
 @router.post("", response_model=MetricResponse, status_code=status.HTTP_201_CREATED)
 async def create(data: CreateMetricRequest, current_user: CurrentUser, db: DB):
     metric = Metric(user_id=current_user.id, **data.model_dump())
@@ -68,6 +83,7 @@ async def update(metric_id: int, data: UpdateMetricRequest, current_user: Curren
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(metric, field, value)
     await db.flush()
+    await db.refresh(metric)  # updated_at is set by the database; reading it unloaded would 500
     return metric
 
 

@@ -1,16 +1,17 @@
 "use client";
 import { format, parseISO } from "date-fns";
 import { RefreshCw } from "lucide-react";
+import { SelectableCard } from "@/components/ui/selectable-card";
 import type { WeeklyReview } from "@/types";
 
 const STATUS_STYLES: Record<
   string,
   { label: string; class: string; spin?: boolean }
 > = {
-  pending:     { label: "Pending",     class: "bg-[hsl(var(--fg-secondary)/0.12)] text-[hsl(var(--fg-secondary))]" },
-  in_progress: { label: "Generating",  class: "bg-[hsl(var(--area-learning)/0.12)] text-[hsl(var(--area-learning))]", spin: true },
-  completed:   { label: "Done",        class: "bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))]" },
-  failed:      { label: "Failed",      class: "bg-[hsl(var(--area-health)/0.12)] text-[hsl(var(--area-health))]" },
+  pending:     { label: "Pending",     class: "bg-fg-secondary/[0.12] text-fg-secondary" },
+  in_progress: { label: "Generating",  class: "bg-accent/10 text-accent-fg", spin: true },
+  completed:   { label: "Done",        class: "bg-accent/[0.12] text-accent-fg" },
+  failed:      { label: "Failed",      class: "bg-destructive/[0.12] text-destructive-fg" },
 };
 
 interface WeeklyReviewCardProps {
@@ -28,19 +29,14 @@ export function WeeklyReviewCard({ review, selected, onSelect }: WeeklyReviewCar
       : null;
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onSelect(review)}
-      onKeyDown={(e) => e.key === "Enter" && onSelect(review)}
-      className={`group rounded-xl border p-3.5 cursor-pointer transition-colors ${
-        selected
-          ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.06)]"
-          : "border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] hover:border-[hsl(var(--accent)/0.4)]"
-      }`}
+    <SelectableCard
+      label={`Open weekly review for ${format(parseISO(review.week_start_date), "MMM d")} to ${format(parseISO(review.week_end_date), "MMM d, yyyy")}`}
+      selected={selected}
+      onSelect={() => onSelect(review)}
+      className="p-3.5"
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-medium text-[hsl(var(--fg-primary))]">
+        <span className="text-xs font-medium text-foreground">
           {format(parseISO(review.week_start_date), "MMM d")}
           {" – "}
           {format(parseISO(review.week_end_date), "MMM d, yyyy")}
@@ -52,7 +48,7 @@ export function WeeklyReviewCard({ review, selected, onSelect }: WeeklyReviewCar
       </div>
 
       {review.generation_status === "completed" && (
-        <div className="flex items-center gap-3 text-xs text-[hsl(var(--fg-secondary))]">
+        <div className="flex items-center gap-3 text-xs text-fg-secondary">
           {avgScore && <span>{avgScore}/10 avg</span>}
           {review.habit_completion_rate !== null && (
             <span>{Math.round(Number(review.habit_completion_rate))}% habits</span>
@@ -65,6 +61,6 @@ export function WeeklyReviewCard({ review, selected, onSelect }: WeeklyReviewCar
           )}
         </div>
       )}
-    </div>
+    </SelectableCard>
   );
 }

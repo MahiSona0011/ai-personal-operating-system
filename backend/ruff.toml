@@ -1,0 +1,6 @@
+line-length = 120
+extend-exclude = [".pydeps", "alembic/versions", "get-pip.py"]
+
+[lint]
+select = ["E", "F"]
+ignore = ["E501", "E711", "E712"]  # E711/E712: SQLAlchemy column comparisons

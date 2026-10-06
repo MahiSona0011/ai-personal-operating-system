@@ -10,34 +10,30 @@ export function useMetricList(params?: ListMetricsParams) {
   });
 }
 
-export function useMetricHistory(life_area_id: number | null, metric_key: string | null) {
-  return useQuery({
-    queryKey: ["metrics", "history", life_area_id, metric_key],
-    queryFn: () =>
-      metricsApi.list({ life_area_id: life_area_id!, metric_key: metric_key!, limit: 90 }),
-    enabled: life_area_id !== null && metric_key !== null,
-    staleTime: 30_000,
-  });
-}
-
 export function useMetricMutations() {
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["metrics"] });
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["metrics"] });
+    queryClient.invalidateQueries({ queryKey: ["areas"] }); // area pages list each metric's latest value
+  };
 
   const createMutation = useMutation({
     mutationFn: (data: CreateMetricData) => metricsApi.create(data),
     onSuccess: invalidate,
+    meta: { successMessage: "Reading logged", errorMessage: "Couldn't log the reading" },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateMetricData }) =>
       metricsApi.update(id, data),
     onSuccess: invalidate,
+    meta: { successMessage: "Reading updated", errorMessage: "Couldn't update the reading" },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => metricsApi.delete(id),
     onSuccess: invalidate,
+    meta: { successMessage: "Reading deleted", errorMessage: "Couldn't delete the reading" },
   });
 
   return { createMutation, updateMutation, deleteMutation };

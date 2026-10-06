@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,8 +9,20 @@ import { CreateEditGoalModal } from "@/components/goals/CreateEditGoalModal";
 import { useGoalsList, useGoalMutations } from "@/lib/hooks/useGoals";
 import { LIFE_AREAS } from "@/types";
 import type { Goal } from "@/types";
+import { cn } from "@/lib/utils/cn";
+
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default function GoalsPage() {
+  // useSearchParams (for ?new=1 from the command palette) needs a Suspense boundary.
+  return (
+    <Suspense fallback={null}>
+      <GoalsContent />
+    </Suspense>
+  );
+}
+
+function GoalsContent() {
   const { data: goals, isLoading } = useGoalsList();
   const {
     createMutation,
@@ -31,6 +44,13 @@ export default function GoalsPage() {
     setEditTarget(undefined);
     setModalOpen(true);
   }
+
+  // "New goal" in the command palette links here with ?new=1.
+  const wantsNew = useSearchParams().get("new") === "1";
+  useEffect(() => {
+    if (wantsNew) openCreate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsNew]);
 
   function openEdit(goal: Goal) {
     setEditTarget(goal);
@@ -59,9 +79,9 @@ export default function GoalsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--fg-primary))]">Goals</h1>
+          <h1 className="text-2xl font-bold text-foreground">Goals</h1>
           {!isLoading && totalCount > 0 && (
-            <p className="text-sm text-[hsl(var(--fg-secondary))] mt-0.5">
+            <p className="text-sm text-fg-secondary mt-0.5">
               {completedCount} of {totalCount} completed
             </p>
           )}
@@ -82,13 +102,13 @@ export default function GoalsPage() {
 
       {/* Empty state */}
       {!isLoading && activeGoals.length === 0 && completedGoals.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-          <Target size={40} className="text-[hsl(var(--fg-secondary))]" />
-          <p className="text-[hsl(var(--fg-secondary))]">No goals yet. Set your first intention.</p>
-          <Button onClick={openCreate}>
-            <Plus size={15} className="mr-1" /> Create your first goal
-          </Button>
-        </div>
+        <EmptyState
+          icon={Target}
+          title="No goals yet"
+          description="A goal is an outcome with a target date, split into milestones. Pick one thing you want to have done by the end of the quarter."
+          action={{ label: "Create your first goal", onClick: openCreate }}
+          className="py-20"
+        />
       )}
 
       {/* Active goals grouped by life area */}
@@ -97,10 +117,10 @@ export default function GoalsPage() {
           {byArea.map(({ area, goals: areaGoals }) => (
             <section key={area.id}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm font-semibold" style={{ color: area.color }}>
+                <span className={cn("text-sm font-semibold", area.text)}>
                   {area.name}
                 </span>
-                <span className="text-xs text-[hsl(var(--fg-secondary))]">
+                <span className="text-xs text-fg-secondary">
                   {areaGoals.length} goal{areaGoals.length > 1 ? "s" : ""}
                 </span>
               </div>
@@ -126,7 +146,7 @@ export default function GoalsPage() {
       {/* Completed section */}
       {!isLoading && completedGoals.length > 0 && (
         <section className="mt-10">
-          <h2 className="text-sm font-semibold text-[hsl(var(--fg-secondary))] mb-3 uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-fg-secondary mb-3 uppercase tracking-wider">
             Completed
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-60">

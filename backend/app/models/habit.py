@@ -1,21 +1,21 @@
 from datetime import datetime, date
 from typing import Optional
-from sqlalchemy import String, Text, SmallInteger, BigInteger, Date, DateTime, Boolean, Integer, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import String, Text, SmallInteger, BigInteger, Date, DateTime, Boolean, Integer, ForeignKey, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
+from app.models.base import PK_TYPE
 
 
 class Habit(Base, TimestampMixin):
     __tablename__ = "habits"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(PK_TYPE, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     life_area_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("life_areas.id"), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     frequency: Mapped[str] = mapped_column(String(20), nullable=False, default="daily")
-    frequency_days: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
+    frequency_days: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     target_count: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=1)
     current_streak: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     longest_streak: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -30,7 +30,7 @@ class Habit(Base, TimestampMixin):
 class HabitLog(Base, TimestampMixin):
     __tablename__ = "habit_logs"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(PK_TYPE, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     habit_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("habits.id", ondelete="CASCADE"), nullable=False)
     log_date: Mapped[date] = mapped_column(Date, nullable=False)

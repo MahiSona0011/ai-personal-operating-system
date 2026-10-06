@@ -51,7 +51,7 @@ export function AvatarUpload() {
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={isUploading}
-        className="relative group w-16 h-16 rounded-full overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent))]"
+        className="relative group w-16 h-16 rounded-full overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         {user?.avatar_url ? (
           <img
@@ -60,7 +60,7 @@ export function AvatarUpload() {
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full bg-[hsl(var(--accent)/0.2)] flex items-center justify-center text-lg font-bold text-[hsl(var(--accent))]">
+          <div className="w-full h-full bg-accent/10 flex items-center justify-center text-lg font-bold text-accent-fg">
             {initials}
           </div>
         )}
@@ -75,11 +75,11 @@ export function AvatarUpload() {
         </div>
       </button>
 
-      <p className="text-xs text-[hsl(var(--fg-secondary))]">
+      <p className="text-xs text-fg-secondary">
         Click to change · jpeg, png, webp, gif · max 5 MB
       </p>
 
-      {error && <p className="text-xs text-[hsl(var(--area-health))]">{error}</p>}
+      {error && <p className="text-xs text-destructive-fg">{error}</p>}
 
       <input
         ref={inputRef}

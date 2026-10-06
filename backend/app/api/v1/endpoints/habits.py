@@ -1,14 +1,16 @@
+from datetime import date
+
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 
-from app.api.deps import CurrentUser, DB
+from app.api.deps import CurrentUser, DB, RangeDays, UserToday, ensure_life_area
 from app.models.habit import Habit
 from app.schemas.habit import (
     HabitResponse, HabitWithTodayStatus, CreateHabitRequest,
     UpdateHabitRequest, LogHabitRequest, HabitLogResponse, StreakResponse,
     HabitLogHistoryItem,
 )
-from app.services import habit_service
+from app.services import habit_service, habit_stats
 
 router = APIRouter(prefix="/habits", tags=["habits"])
 
@@ -27,6 +29,15 @@ async def list_habits(current_user: CurrentUser, db: DB):
     return await habit_service.list_habits(db, current_user.id)
 
 
+@router.get("/completion")
+async def completion(current_user: CurrentUser, db: DB, today: UserToday, days: RangeDays):
+    """Daily completion-rate series for the last `days` days plus each habit's 30-day rate.
+
+    `rate` is a 0-100 percentage, or null on days when no habit was due.
+    """
+    return await habit_stats.completion(db, current_user.id, days, today)
+
+
 @router.get("/today", response_model=list[HabitWithTodayStatus])
 async def habits_today(current_user: CurrentUser, db: DB):
     pairs = await habit_service.get_habits_with_today_status(db, current_user.id)
@@ -42,6 +53,7 @@ async def habits_today(current_user: CurrentUser, db: DB):
 
 @router.post("", response_model=HabitResponse, status_code=status.HTTP_201_CREATED)
 async def create(data: CreateHabitRequest, current_user: CurrentUser, db: DB):
+    await ensure_life_area(db, data.life_area_id)
     return await habit_service.create_habit(db, current_user.id, data)
 
 
@@ -61,6 +73,13 @@ async def delete(habit_id: int, current_user: CurrentUser, db: DB):
 async def log_completion(habit_id: int, data: LogHabitRequest, current_user: CurrentUser, db: DB):
     habit = await _get_habit_or_404(db, current_user.id, habit_id)
     return await habit_service.log_completion(db, habit, data)
+
+
+@router.delete("/{habit_id}/log", status_code=status.HTTP_204_NO_CONTENT)
+async def unlog(habit_id: int, log_date: date, current_user: CurrentUser, db: DB):
+    """Remove the habit's log for `log_date`. Idempotent: 204 whether or not a log existed."""
+    habit = await _get_habit_or_404(db, current_user.id, habit_id)
+    await habit_service.remove_log(db, habit, log_date)
 
 
 @router.get("/{habit_id}/logs", response_model=list[HabitLogHistoryItem])

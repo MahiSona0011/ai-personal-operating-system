@@ -1,4 +1,10 @@
 import type { Config } from "tailwindcss";
+import defaultTheme from "tailwindcss/defaultTheme";
+
+// Every colour is `hsl(var(--token) / <alpha-value>)` so opacity modifiers (`bg-success/10`) work.
+const token = (name: string) => `hsl(var(--${name}) / <alpha-value>)`;
+
+const area = (name: string) => ({ DEFAULT: token(`area-${name}`), fg: token(`area-${name}-fg`) });
 
 const config: Config = {
   darkMode: ["class"],
@@ -6,6 +12,7 @@ const config: Config = {
     "./pages/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
+    "./lib/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
   ],
   theme: {
@@ -15,25 +22,42 @@ const config: Config = {
       screens: { "2xl": "1400px" },
     },
     extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", ...defaultTheme.fontFamily.sans],
+      },
       colors: {
-        border: "hsl(var(--border))",
-        background: "hsl(var(--bg-base))",
-        foreground: "hsl(var(--fg-primary))",
-        surface: "hsl(var(--bg-surface))",
-        elevated: "hsl(var(--bg-elevated))",
-        muted: { DEFAULT: "hsl(var(--bg-elevated))", foreground: "hsl(var(--fg-secondary))" },
-        accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
-        destructive: { DEFAULT: "hsl(var(--destructive))" },
-        card: { DEFAULT: "hsl(var(--bg-surface))", foreground: "hsl(var(--fg-primary))" },
-        areas: {
-          discipline: "hsl(var(--area-discipline))",
-          focus: "hsl(var(--area-focus))",
-          learning: "hsl(var(--area-learning))",
-          career: "hsl(var(--area-career))",
-          health: "hsl(var(--area-health))",
-          mental: "hsl(var(--area-mental))",
-          social: "hsl(var(--area-social))",
-          financial: "hsl(var(--area-financial))",
+        border: { DEFAULT: token("border"), strong: token("border-strong") },
+        background: token("bg-base"),
+        foreground: token("fg-primary"),
+        surface: token("bg-surface"),
+        elevated: token("bg-elevated"),
+        fg: { secondary: token("fg-secondary"), muted: token("fg-muted") },
+        muted: { DEFAULT: token("bg-elevated"), foreground: token("fg-secondary") },
+        accent: {
+          DEFAULT: token("accent"),
+          fg: token("accent-fg"),
+          solid: token("accent-solid"),
+          2: token("accent-2"),
+          foreground: token("accent-foreground"),
+        },
+        destructive: { DEFAULT: token("destructive"), fg: token("destructive-fg"), solid: token("destructive-solid") },
+        success: { DEFAULT: token("success"), fg: token("success-fg") },
+        warning: { DEFAULT: token("warning"), fg: token("warning-fg") },
+        card: { DEFAULT: token("bg-surface"), foreground: token("fg-primary") },
+        area: {
+          health: area("health"),
+          mind: area("mind"),
+          relationships: area("relationships"),
+          work: area("work"),
+          money: area("money"),
+          growth: area("growth"),
+        },
+        chart: {
+          grid: token("chart-grid"),
+          axis: token("chart-axis"),
+          score: token("chart-score"),
+          mood: token("chart-mood"),
+          energy: token("chart-energy"),
         },
       },
       borderRadius: {

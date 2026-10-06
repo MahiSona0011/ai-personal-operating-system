@@ -1,4 +1,5 @@
 "use client";
+import { tokenColor } from "@/lib/utils/color";
 
 interface ProgressRingProps {
   progress: number;   // 0–100
@@ -13,7 +14,7 @@ export function ProgressRing({
   progress,
   size = 80,
   strokeWidth = 7,
-  color = "hsl(var(--accent))",
+  color = tokenColor("accent"),
   label,
   sublabel,
 }: ProgressRingProps) {
@@ -29,7 +30,7 @@ export function ProgressRing({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="hsl(var(--border))"
+          stroke={tokenColor("border")}
           strokeWidth={strokeWidth}
         />
         <circle
@@ -47,8 +48,8 @@ export function ProgressRing({
       </svg>
       {(label || sublabel) && (
         <div className="absolute flex flex-col items-center justify-center text-center leading-tight">
-          {label && <span className="text-sm font-semibold text-[hsl(var(--fg-primary))]">{label}</span>}
-          {sublabel && <span className="text-[10px] text-[hsl(var(--fg-secondary))]">{sublabel}</span>}
+          {label && <span className="text-sm font-semibold text-foreground">{label}</span>}
+          {sublabel && <span className="text-[10px] text-fg-secondary">{sublabel}</span>}
         </div>
       )}
     </div>

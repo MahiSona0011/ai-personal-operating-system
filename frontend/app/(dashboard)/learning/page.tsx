@@ -9,7 +9,9 @@ import { LogSessionModal } from "@/components/learning/LogSessionModal";
 import { useSessionsList, useSessionStats, useSessionMutations } from "@/lib/hooks/useSessions";
 import { LIFE_AREAS } from "@/types";
 import type { WorkSession } from "@/types";
+import { tokenColor } from "@/lib/utils/color";
 
+import { EmptyState } from "@/components/ui/empty-state";
 function StatPill({
   icon,
   label,
@@ -22,10 +24,10 @@ function StatPill({
   color: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-5 py-3 min-w-[100px]">
+    <div className="flex flex-col items-center gap-1 rounded-xl border border-border bg-surface px-5 py-3 min-w-[100px]">
       <span style={{ color }}>{icon}</span>
-      <span className="text-lg font-bold text-[hsl(var(--fg-primary))]">{value}</span>
-      <span className="text-xs text-[hsl(var(--fg-secondary))]">{label}</span>
+      <span className="text-lg font-bold text-foreground">{value}</span>
+      <span className="text-xs text-fg-secondary">{label}</span>
     </div>
   );
 }
@@ -64,8 +66,8 @@ export default function LearningPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--fg-primary))]">Learning & Sessions</h1>
-          <p className="text-sm text-[hsl(var(--fg-secondary))] mt-0.5">Last 12 weeks</p>
+          <h1 className="text-2xl font-bold text-foreground">Learning sessions</h1>
+          <p className="text-sm text-fg-secondary mt-0.5">Last 12 weeks</p>
         </div>
         <Button onClick={() => setModalOpen(true)} size="sm">
           <Plus size={15} className="mr-1" /> Log session
@@ -83,20 +85,20 @@ export default function LearningPage() {
             icon={<Clock size={18} />}
             label="Total time"
             value={hoursLabel}
-            color="hsl(var(--area-focus))"
+            color={tokenColor("accent")}
           />
           <StatPill
             icon={<BarChart2 size={18} />}
             label="Sessions"
             value={String(stats.session_count)}
-            color="hsl(var(--area-learning))"
+            color={tokenColor("accent-2")}
           />
           {stats.avg_quality != null && (
             <StatPill
               icon={<Star size={18} />}
               label="Avg quality"
               value={`${stats.avg_quality}/5`}
-              color="hsl(var(--area-mental))"
+              color={tokenColor("warning")}
             />
           )}
           {/* Top area */}
@@ -118,8 +120,8 @@ export default function LearningPage() {
 
       {/* Weekly breakdown bar */}
       {stats && stats.by_week.length > 0 && (
-        <div className="mb-6 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
-          <p className="text-xs text-[hsl(var(--fg-secondary))] mb-3 font-medium uppercase tracking-wide">Weekly minutes</p>
+        <div className="mb-6 rounded-xl border border-border bg-surface p-4">
+          <p className="text-xs text-fg-secondary mb-3 font-medium uppercase tracking-wide">Weekly minutes</p>
           <div className="flex items-end gap-1 h-14">
             {(() => {
               const max = Math.max(...stats.by_week.map((w) => w.minutes), 1);
@@ -129,10 +131,10 @@ export default function LearningPage() {
                 return (
                   <div key={w.week_start} className="flex-1 flex flex-col items-center gap-1 group relative">
                     <div
-                      className={`w-full rounded-t transition-all ${isCurrentWeek ? "bg-[hsl(var(--accent))]" : "bg-[hsl(var(--border))] group-hover:bg-[hsl(var(--accent)/0.6)]"}`}
+                      className={`w-full rounded-t transition-all ${isCurrentWeek ? "bg-accent" : "bg-border group-hover:bg-accent/60"}`}
                       style={{ height: `${Math.max(pct, 4)}%` }}
                     />
-                    <span className="absolute -top-5 text-[10px] text-[hsl(var(--fg-secondary))] opacity-0 group-hover:opacity-100 whitespace-nowrap">
+                    <span className="absolute -top-5 text-[10px] text-fg-secondary opacity-0 group-hover:opacity-100 whitespace-nowrap">
                       {w.minutes}m
                     </span>
                   </div>
@@ -151,13 +153,13 @@ export default function LearningPage() {
       )}
 
       {!sessionsLoading && grouped.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-          <BookOpen size={40} className="text-[hsl(var(--fg-secondary))]" />
-          <p className="text-[hsl(var(--fg-secondary))]">No sessions yet. Log your first focused block.</p>
-          <Button onClick={() => setModalOpen(true)}>
-            <Plus size={15} className="mr-1" /> Log session
-          </Button>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title="No sessions yet"
+          description="A session is a block of focused time: deep work, study, reading or practice. Log them to see time by week and how well each went."
+          action={{ label: "Log your first session", onClick: () => setModalOpen(true) }}
+          className="py-20"
+        />
       )}
 
       {!sessionsLoading && grouped.length > 0 && (
@@ -167,11 +169,11 @@ export default function LearningPage() {
             return (
               <section key={date}>
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-sm font-semibold text-[hsl(var(--fg-primary))]">
+                  <span className="text-sm font-semibold text-foreground">
                     {format(parseISO(date), "EEEE, MMM d")}
                   </span>
                   {dayTotal > 0 && (
-                    <span className="text-xs text-[hsl(var(--fg-secondary))]">{dayTotal}m total</span>
+                    <span className="text-xs text-fg-secondary">{dayTotal}m total</span>
                   )}
                 </div>
                 <div className="flex flex-col gap-2">

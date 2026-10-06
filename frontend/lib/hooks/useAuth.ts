@@ -15,7 +15,7 @@ export function useAuth() {
     }
     const me = await authApi.me();
     setAuth(me, tokens.access_token, tokens.refresh_token);
-    router.push("/dashboard");
+    router.push(me.onboarding_state === "pending" ? "/onboarding" : "/dashboard");
   };
 
   const register = async (email: string, password: string, full_name: string) => {
@@ -26,7 +26,7 @@ export function useAuth() {
     }
     const me = await authApi.me();
     setAuth(me, tokens.access_token, tokens.refresh_token);
-    router.push("/dashboard");
+    router.push("/onboarding");
   };
 
   const logout = async () => {

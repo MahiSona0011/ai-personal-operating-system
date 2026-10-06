@@ -3,6 +3,14 @@ import { CheckCircle2, Loader2, Trophy, Zap, AlertTriangle, ListChecks } from "l
 import { Button } from "@/components/ui/button";
 import { LIFE_AREAS } from "@/types";
 import type { AreaScores } from "./StepScores";
+import { tokenColor } from "@/lib/utils/color";
+import { format } from "date-fns";
+import { QuoteCard } from "@/components/dashboard/QuoteCard";
+import { useAuthStore } from "@/store/authStore";
+import { useDashboard } from "@/lib/hooks/useDashboard";
+import { pickQuote, weakestArea } from "@/lib/quote-of-the-day";
+import { lifeScore, selectedAreaKeys } from "@/lib/scoring";
+import type { AreaKey } from "@/lib/areas";
 
 interface StepReviewProps {
   scores: AreaScores;
@@ -16,39 +24,19 @@ interface StepReviewProps {
 }
 
 const AREA_FIELD_MAP = {
-  discipline: "score_discipline",
-  focus: "score_focus",
-  learning: "score_learning",
-  career: "score_career",
   health: "score_health",
-  mental: "score_mental",
-  social: "score_social",
-  financial: "score_financial",
+  mind: "score_mind",
+  relationships: "score_relationships",
+  work: "score_work",
+  money: "score_money",
+  growth: "score_growth",
 } as const;
 
-const WEIGHTS: Record<string, number> = {
-  discipline: 0.15,
-  focus: 0.15,
-  learning: 0.12,
-  career: 0.13,
-  health: 0.15,
-  mental: 0.13,
-  social: 0.09,
-  financial: 0.08,
-};
-
-function computeOverall(scores: AreaScores): number {
-  let total = 0;
-  let weightSum = 0;
-  for (const area of LIFE_AREAS) {
-    const field = AREA_FIELD_MAP[area.slug];
-    const score = scores[field];
-    if (score != null) {
-      total += score * WEIGHTS[area.slug];
-      weightSum += WEIGHTS[area.slug];
-    }
-  }
-  return weightSum > 0 ? Math.round((total / weightSum) * 10) / 10 : 0;
+// Life Score: same definition as the backend (mean of the areas picked in onboarding).
+function computeOverall(scores: AreaScores, selected: AreaKey[]): number {
+  const byKey = Object.fromEntries(LIFE_AREAS.map((a) => [a.slug, scores[AREA_FIELD_MAP[a.slug]]]));
+  const value = lifeScore(byKey, selected);
+  return value == null ? 0 : Math.round(value * 10) / 10;
 }
 
 export function StepReview({
@@ -61,7 +49,17 @@ export function StepReview({
   onComplete,
   isCompleting,
 }: StepReviewProps) {
-  const overall = computeOverall(scores);
+  const user = useAuthStore((s) => s.user);
+  const { data: dashboard } = useDashboard();
+  const overall = computeOverall(scores, selectedAreaKeys(user?.preferences));
+  // The day's quote, same pick as on the dashboard (stable for the day).
+  const picked = user
+    ? pickQuote({
+        dateKey: format(new Date(), "yyyy-MM-dd"),
+        userId: user.id,
+        weakestArea: weakestArea(dashboard?.areas, dashboard?.selected_areas),
+      })
+    : null;
 
   return (
     <div className="space-y-5">
@@ -71,8 +69,8 @@ export function StepReview({
 
       {/* Overall score preview */}
       <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-accent/5">
-        <span className="text-sm font-semibold">Estimated Overall Score</span>
-        <span className="text-2xl font-bold text-accent">{overall}<span className="text-sm font-normal text-muted-foreground">/10</span></span>
+        <span className="text-sm font-semibold">Estimated Life Score</span>
+        <span className="text-2xl font-bold text-accent-fg">{overall}<span className="text-sm font-normal text-muted-foreground">/10</span></span>
       </div>
 
       {/* Area bars */}
@@ -99,20 +97,20 @@ export function StepReview({
       <div className="grid grid-cols-2 gap-3">
         <div className="p-3 rounded-lg bg-elevated/50 border border-border text-center">
           <p className="text-xs text-muted-foreground mb-1">Mood</p>
-          <p className="text-lg font-bold" style={{ color: "hsl(330 81% 60%)" }}>{mood}<span className="text-xs font-normal text-muted-foreground">/10</span></p>
+          <p className="text-lg font-bold" style={{ color: tokenColor("area-relationships-fg") }}>{mood}<span className="text-xs font-normal text-muted-foreground">/10</span></p>
         </div>
         <div className="p-3 rounded-lg bg-elevated/50 border border-border text-center">
           <p className="text-xs text-muted-foreground mb-1">Energy</p>
-          <p className="text-lg font-bold" style={{ color: "hsl(38 92% 50%)" }}>{energy}<span className="text-xs font-normal text-muted-foreground">/10</span></p>
+          <p className="text-lg font-bold" style={{ color: tokenColor("area-mind-fg") }}>{energy}<span className="text-xs font-normal text-muted-foreground">/10</span></p>
         </div>
       </div>
 
       {/* Wins / blockers / actions summary */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: "Wins", count: wins.length, icon: Trophy, color: "hsl(142 71% 45%)" },
-          { label: "Blockers", count: blockers.length, icon: AlertTriangle, color: "hsl(0 84% 60%)" },
-          { label: "Actions", count: actionPlan.length, icon: ListChecks, color: "hsl(250 84% 67%)" },
+          { label: "Wins", count: wins.length, icon: Trophy, color: tokenColor("success-fg") },
+          { label: "Blockers", count: blockers.length, icon: AlertTriangle, color: tokenColor("destructive-fg") },
+          { label: "Actions", count: actionPlan.length, icon: ListChecks, color: tokenColor("accent-fg") },
         ].map(({ label, count, icon: Icon, color }) => (
           <div key={label} className="p-3 rounded-lg bg-elevated/50 border border-border text-center">
             <Icon size={14} className="mx-auto mb-1" style={{ color }} />
@@ -121,6 +119,8 @@ export function StepReview({
           </div>
         ))}
       </div>
+
+      {picked && <QuoteCard quote={picked.quote} forArea={picked.forArea} />}
 
       <Button
         className="w-full"

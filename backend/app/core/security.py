@@ -39,11 +39,24 @@ def create_refresh_token() -> tuple[str, str]:
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
-    """Raises jwt.PyJWTError on invalid/expired token."""
-    return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    """Raises jwt.PyJWTError on invalid/expired token, or if it is not an access token."""
+    payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    if payload.get("type") != "access":
+        raise jwt.InvalidTokenError("Not an access token")
+    return payload
 
 
 def hash_refresh_token(raw_token: str) -> str:
+    return hashlib.sha256(raw_token.encode()).hexdigest()
+
+
+def new_emailed_token() -> tuple[str, str]:
+    """Returns (raw_token, sha256_hash) for a link we email. Store only the hash."""
+    raw = secrets.token_urlsafe(32)
+    return raw, hashlib.sha256(raw.encode()).hexdigest()
+
+
+def hash_emailed_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode()).hexdigest()
 
 

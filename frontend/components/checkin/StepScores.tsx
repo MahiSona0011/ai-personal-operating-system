@@ -1,26 +1,23 @@
 "use client";
 import { Slider } from "@/components/ui/slider";
 import { LIFE_AREAS } from "@/types";
+import { cn } from "@/lib/utils/cn";
 
 type ScoreKey =
-  | "score_discipline"
-  | "score_focus"
-  | "score_learning"
-  | "score_career"
   | "score_health"
-  | "score_mental"
-  | "score_social"
-  | "score_financial";
+  | "score_mind"
+  | "score_relationships"
+  | "score_work"
+  | "score_money"
+  | "score_growth";
 
 const AREA_FIELD_MAP: Record<string, ScoreKey> = {
-  discipline: "score_discipline",
-  focus: "score_focus",
-  learning: "score_learning",
-  career: "score_career",
   health: "score_health",
-  mental: "score_mental",
-  social: "score_social",
-  financial: "score_financial",
+  mind: "score_mind",
+  relationships: "score_relationships",
+  work: "score_work",
+  money: "score_money",
+  growth: "score_growth",
 };
 
 export type AreaScores = Record<ScoreKey, number>;
@@ -50,14 +47,12 @@ export function StepScores({ scores, onChange }: StepScoresProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: area.color }}
+                    className={cn("w-2.5 h-2.5 rounded-full shrink-0", area.dot)}
                   />
                   <span className="text-sm font-medium">{area.name}</span>
                 </div>
                 <span
-                  className="text-sm font-bold tabular-nums w-5 text-right"
-                  style={{ color: area.color }}
+                  className={cn("text-sm font-bold tabular-nums w-5 text-right", area.text)}
                 >
                   {value}
                 </span>

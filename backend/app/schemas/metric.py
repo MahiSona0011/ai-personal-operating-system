@@ -2,7 +2,7 @@ from datetime import datetime, date
 from typing import Optional
 from pydantic import BaseModel, field_validator
 
-VALID_AREA_IDS = {1, 2, 3, 4, 5, 6, 7, 8}
+VALID_AREA_IDS = {1, 2, 3, 4, 5, 6}
 
 
 class CreateMetricRequest(BaseModel):

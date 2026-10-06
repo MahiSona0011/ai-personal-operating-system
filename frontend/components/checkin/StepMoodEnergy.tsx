@@ -1,5 +1,6 @@
 "use client";
 import { Slider } from "@/components/ui/slider";
+import { tokenColor } from "@/lib/utils/color";
 
 interface StepMoodEnergyProps {
   mood: number;
@@ -65,7 +66,7 @@ export function StepMoodEnergy({ mood, energy, onChange }: StepMoodEnergyProps) 
           label="Mood"
           value={mood}
           onChange={(v) => onChange("mood", v)}
-          color="hsl(330 81% 60%)"
+          color={tokenColor("chart-mood")}
           emojis={MOOD_LABELS}
           lowLabel="Really low"
           highLabel="Fantastic"
@@ -74,7 +75,7 @@ export function StepMoodEnergy({ mood, energy, onChange }: StepMoodEnergyProps) 
           label="Energy"
           value={energy}
           onChange={(v) => onChange("energy", v)}
-          color="hsl(38 92% 50%)"
+          color={tokenColor("chart-energy")}
           emojis={ENERGY_LABELS}
           lowLabel="Exhausted"
           highLabel="Full power"

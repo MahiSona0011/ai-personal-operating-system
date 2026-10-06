@@ -1,0 +1,18 @@
+# Keep secrets, local tooling and test-only files out of the image (the Dockerfile does COPY . .).
+.env
+.env.*
+!.env.example
+.pydeps/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coveragerc
+htmlcov/
+tests/
+conftest.py
+pytest.ini
+ruff.toml
+get-pip.py
+railway.json

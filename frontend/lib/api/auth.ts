@@ -21,4 +21,22 @@ export const authApi = {
 
   changePassword: (data: { current_password: string; new_password: string }) =>
     apiClient.post("/auth/change-password", data),
+
+  forgotPassword: (email: string) =>
+    apiClient.post<{ message: string }>("/auth/forgot-password", { email }).then((r) => r.data),
+
+  resetPassword: (data: { token: string; new_password: string }) =>
+    apiClient.post("/auth/reset-password", data),
+
+  sendVerification: () =>
+    apiClient.post<{ message: string }>("/auth/verify-email/send").then((r) => r.data),
+
+  verifyEmail: (token: string) =>
+    apiClient.get("/auth/verify-email", { params: { token } }),
+
+  deleteAccount: (password: string) =>
+    apiClient.delete("/auth/me", { data: { password } }),
+
+  completeOnboarding: () =>
+    apiClient.patch<User>("/auth/me/onboarding").then((r) => r.data),
 };

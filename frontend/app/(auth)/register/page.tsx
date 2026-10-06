@@ -41,11 +41,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <main className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gradient">AI-POS</h1>
-          <p className="text-muted-foreground text-sm mt-2">Create your personal OS</p>
+          <h1 className="text-2xl font-bold text-gradient">Selfstack</h1>
+          <p className="text-muted-foreground text-sm mt-2">Create your account</p>
         </div>
 
         <div className="bg-surface border border-border rounded-lg p-6 space-y-4">
@@ -53,29 +53,29 @@ export default function RegisterPage() {
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Full Name</label>
               <Input placeholder="Ray Kurzweil" {...register("full_name")} />
-              {errors.full_name && <p className="text-xs text-destructive">{errors.full_name.message}</p>}
+              {errors.full_name && <p className="text-xs text-destructive-fg">{errors.full_name.message}</p>}
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</label>
               <Input type="email" placeholder="you@example.com" {...register("email")} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-destructive-fg">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Password</label>
               <Input type="password" placeholder="Min 8 chars, 1 uppercase, 1 digit" {...register("password")} />
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+              {errors.password && <p className="text-xs text-destructive-fg">{errors.password.message}</p>}
             </div>
 
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Confirm Password</label>
               <Input type="password" placeholder="••••••••" {...register("confirm_password")} />
-              {errors.confirm_password && <p className="text-xs text-destructive">{errors.confirm_password.message}</p>}
+              {errors.confirm_password && <p className="text-xs text-destructive-fg">{errors.confirm_password.message}</p>}
             </div>
 
             {error && (
-              <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
+              <div className="text-xs text-destructive-fg bg-destructive/10 border border-destructive/20 rounded-md p-3">
                 {error}
               </div>
             )}
@@ -88,13 +88,13 @@ export default function RegisterPage() {
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/login" className="text-accent hover:underline">
+              <Link href="/login" className="text-accent-fg underline underline-offset-2 hover:no-underline">
                 Sign in
               </Link>
             </p>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

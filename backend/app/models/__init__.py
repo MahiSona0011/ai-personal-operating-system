@@ -1,5 +1,6 @@
 from app.models.base import Base, TimestampMixin
 from app.models.user import User, UserSession
+from app.models.auth_token import AuthToken
 from app.models.life_area import LifeArea
 from app.models.goal import Goal, Milestone
 from app.models.habit import Habit, HabitLog
@@ -11,7 +12,7 @@ from app.models.ai_recommendation import AIRecommendation, WeeklyReview
 
 __all__ = [
     "Base", "TimestampMixin",
-    "User", "UserSession",
+    "User", "UserSession", "AuthToken",
     "LifeArea",
     "Goal", "Milestone",
     "Habit", "HabitLog",

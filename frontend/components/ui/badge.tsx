@@ -6,11 +6,11 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-[hsl(var(--accent)/0.15)] text-[hsl(var(--accent))]",
-        secondary: "bg-[hsl(var(--bg-elevated))] text-[hsl(var(--fg-secondary))]",
-        destructive: "bg-[hsl(var(--destructive)/0.15)] text-[hsl(var(--destructive))]",
-        success: "bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))]",
-        outline: "border border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))]",
+        default: "bg-accent/15 text-accent-fg",
+        secondary: "bg-elevated text-fg-secondary",
+        destructive: "bg-destructive/15 text-destructive-fg",
+        success: "bg-success/15 text-success-fg",
+        outline: "border border-border text-fg-secondary",
       },
     },
     defaultVariants: { variant: "default" },

@@ -4,18 +4,16 @@ from pydantic import BaseModel, field_validator
 
 
 class CheckinScores(BaseModel):
-    score_discipline: Optional[int] = None
-    score_focus: Optional[int] = None
-    score_learning: Optional[int] = None
-    score_career: Optional[int] = None
     score_health: Optional[int] = None
-    score_mental: Optional[int] = None
-    score_social: Optional[int] = None
-    score_financial: Optional[int] = None
+    score_mind: Optional[int] = None
+    score_relationships: Optional[int] = None
+    score_work: Optional[int] = None
+    score_money: Optional[int] = None
+    score_growth: Optional[int] = None
 
     @field_validator(
-        "score_discipline", "score_focus", "score_learning", "score_career",
-        "score_health", "score_mental", "score_social", "score_financial",
+        "score_health", "score_mind", "score_relationships",
+        "score_work", "score_money", "score_growth",
         mode="before"
     )
     @classmethod
@@ -25,25 +23,27 @@ class CheckinScores(BaseModel):
         return v
 
 
-class CreateCheckinRequest(CheckinScores):
-    checkin_date: date
+class MoodEnergy(BaseModel):
+    """Mood and energy are rated 1-10, like the area scores."""
     mood: Optional[int] = None
     energy: Optional[int] = None
+
+    @field_validator("mood", "energy", mode="before")
+    @classmethod
+    def validate_1_to_10(cls, v):
+        if v is not None and not (1 <= v <= 10):
+            raise ValueError("Value must be between 1 and 10")
+        return v
+
+
+class CreateCheckinRequest(CheckinScores, MoodEnergy):
+    checkin_date: date
     wins: Optional[list[str]] = None
     blockers: Optional[list[str]] = None
     action_plan: Optional[list[str]] = None
 
-    @field_validator("mood", "energy", mode="before")
-    @classmethod
-    def validate_1_to_5(cls, v):
-        if v is not None and not (1 <= v <= 5):
-            raise ValueError("Value must be between 1 and 5")
-        return v
 
-
-class UpdateCheckinRequest(CheckinScores):
-    mood: Optional[int] = None
-    energy: Optional[int] = None
+class UpdateCheckinRequest(CheckinScores, MoodEnergy):
     wins: Optional[list[str]] = None
     blockers: Optional[list[str]] = None
     action_plan: Optional[list[str]] = None
@@ -53,14 +53,12 @@ class CheckinResponse(BaseModel):
     id: int
     user_id: int
     checkin_date: date
-    score_discipline: Optional[int]
-    score_focus: Optional[int]
-    score_learning: Optional[int]
-    score_career: Optional[int]
     score_health: Optional[int]
-    score_mental: Optional[int]
-    score_social: Optional[int]
-    score_financial: Optional[int]
+    score_mind: Optional[int]
+    score_relationships: Optional[int]
+    score_work: Optional[int]
+    score_money: Optional[int]
+    score_growth: Optional[int]
     overall_score: Optional[float]
     mood: Optional[int]
     energy: Optional[int]
@@ -77,13 +75,19 @@ class CheckinResponse(BaseModel):
 
 
 class CheckinTrendPoint(BaseModel):
-    checkin_date: date
-    overall_score: Optional[float]
-    score_discipline: Optional[int]
-    score_focus: Optional[int]
-    score_learning: Optional[int]
-    score_career: Optional[int]
-    score_health: Optional[int]
-    score_mental: Optional[int]
-    score_social: Optional[int]
-    score_financial: Optional[int]
+    """One calendar day. Every value is None on a day without a check-in."""
+    date: date
+    life_score: Optional[float]
+    mood: Optional[int]
+    energy: Optional[int]
+    areas: dict[str, Optional[int]]
+
+
+class MovingAveragePoint(BaseModel):
+    date: date
+    value: Optional[float]
+
+
+class CheckinTrendResponse(BaseModel):
+    points: list[CheckinTrendPoint]
+    moving_avg_7: list[MovingAveragePoint]

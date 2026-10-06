@@ -1,0 +1,53 @@
+name: Weekly jobs
+
+# Sunday 18:00 UTC: generate every user's weekly review (runs in the background on the API).
+# Sunday 19:00 UTC: send the weekly digest, an hour later so the reviews exist for the email to quote.
+# Both endpoints are idempotent for reviews; the digest is not, so don't trigger it by hand twice.
+on:
+  schedule:
+    - cron: "0 18 * * 0"
+    - cron: "0 19 * * 0"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Which job to run
+        type: choice
+        options: [reviews, digest]
+        default: reviews
+
+permissions: {}
+
+concurrency:
+  group: weekly-jobs
+  cancel-in-progress: false
+
+jobs:
+  reviews:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 18 * * 0' || github.event.inputs.job == 'reviews'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Generate weekly reviews
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          DIGEST_SECRET: ${{ secrets.DIGEST_SECRET }}
+        run: |
+          test -n "$API_URL" && test -n "$DIGEST_SECRET" || { echo "API_URL and DIGEST_SECRET secrets must be set"; exit 1; }
+          curl --fail-with-body --silent --show-error --max-time 60 --retry 2 --retry-delay 10 \
+            -X POST -H "x-digest-secret: $DIGEST_SECRET" \
+            "$API_URL/api/v1/analysis/weekly-reviews/generate-all"
+
+  digest:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 19 * * 0' || github.event.inputs.job == 'digest'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send weekly digest
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          DIGEST_SECRET: ${{ secrets.DIGEST_SECRET }}
+        run: |
+          test -n "$API_URL" && test -n "$DIGEST_SECRET" || { echo "API_URL and DIGEST_SECRET secrets must be set"; exit 1; }
+          curl --fail-with-body --silent --show-error --max-time 120 \
+            -X POST -H "x-digest-secret: $DIGEST_SECRET" \
+            "$API_URL/api/v1/notifications/weekly-digest"

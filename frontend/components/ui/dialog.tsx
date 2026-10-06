@@ -39,7 +39,7 @@ export function DialogContent({ className, children }: { className?: string; chi
     <div
       ref={ref}
       className={cn(
-        "bg-[hsl(var(--bg-surface))] border border-[hsl(var(--border))] rounded-xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto",
+        "bg-surface border border-border rounded-xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto",
         className
       )}
     >

@@ -1,21 +1,22 @@
 "use client";
 import { useState } from "react";
-import { format } from "date-fns";
 import { Plus, Zap } from "lucide-react";
-import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import { HabitCard } from "@/components/habits/HabitCard";
 import { CreateEditHabitModal } from "@/components/habits/CreateEditHabitModal";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useHabitsList, useHabitMutations } from "@/lib/hooks/useHabits";
+import { useHabitsList, useHabitMutations, useLogHabitToday } from "@/lib/hooks/useHabits";
 import { useHabitsToday } from "@/lib/hooks/useDashboard";
 import type { Habit } from "@/types";
 
+import { EmptyState } from "@/components/ui/empty-state";
 export default function HabitsPage() {
   const { data: habits, isLoading } = useHabitsList();
   const { data: habitsToday } = useHabitsToday();
-  const { createMutation, updateMutation, deleteMutation, logMutation } = useHabitMutations();
+  const { createMutation, updateMutation, deleteMutation } = useHabitMutations();
+  const logHabit = useLogHabitToday();
 
+  const [loggingId, setLoggingId] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Habit | undefined>();
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -48,7 +49,6 @@ export default function HabitsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this habit? This cannot be undone.")) return;
     setDeletingId(id);
     try {
       await deleteMutation.mutateAsync(id);
@@ -57,15 +57,21 @@ export default function HabitsPage() {
     }
   };
 
-  const handleLog = (id: number) => {
-    logMutation.mutate({ id, log_date: format(new Date(), "yyyy-MM-dd") });
+  // Same one-tap logging as the dashboard: instant, rolled back on error, with Undo.
+  const handleLog = async (habit: Habit) => {
+    setLoggingId(habit.id);
+    try {
+      await logHabit.log(habit);
+    } finally {
+      setLoggingId(null);
+    }
   };
 
   const totalToday = habitsToday?.length ?? 0;
   const completedToday = completedIds.size;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -101,21 +107,13 @@ export default function HabitsPage() {
             ))}
           </div>
         ) : habits?.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center">
-              <Zap size={22} className="text-muted-foreground" />
-            </div>
-            <div>
-              <p className="font-semibold">No habits yet</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Start tracking habits to build streaks and see your progress.
-              </p>
-            </div>
-            <Button onClick={openCreate} size="sm">
-              <Plus size={14} className="mr-1.5" />
-              Add your first habit
-            </Button>
-          </div>
+          <EmptyState
+            icon={Zap}
+            title="No habits yet"
+            description="A habit is a small action you repeat, like a 20-minute walk. Tick it off each day to build a streak and lift its life area's score."
+            action={{ label: "Add your first habit", onClick: openCreate }}
+            className="py-16"
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {habits?.map((habit) => (
@@ -123,10 +121,10 @@ export default function HabitsPage() {
                 key={habit.id}
                 habit={habit}
                 completedToday={completedIds.has(habit.id)}
-                onLog={() => handleLog(habit.id)}
+                onLog={() => handleLog(habit)}
                 onEdit={() => openEdit(habit)}
                 onDelete={() => handleDelete(habit.id)}
-                isLogging={logMutation.isPending && logMutation.variables?.id === habit.id}
+                isLogging={loggingId === habit.id}
               />
             ))}
           </div>
@@ -142,6 +140,6 @@ export default function HabitsPage() {
           isSaving={createMutation.isPending || updateMutation.isPending}
         />
       )}
-    </DashboardLayout>
+    </>
   );
 }

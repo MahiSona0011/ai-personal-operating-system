@@ -1,25 +1,48 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { Plus, ScrollText, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { JournalEntryCard } from "@/components/journal/JournalEntryCard";
 import { JournalEditor } from "@/components/journal/JournalEditor";
+import { JournalAiSummary } from "@/components/journal/JournalAiSummary";
 import { useJournalList, useJournalMutations } from "@/lib/hooks/useJournal";
 import { LIFE_AREAS, MOOD_TAGS } from "@/types";
 import type { JournalEntry } from "@/types";
+import { tokenColor } from "@/lib/utils/color";
+import { cn } from "@/lib/utils/cn";
 
+import { EmptyState } from "@/components/ui/empty-state";
 type PanelState =
   | { mode: "idle" }
-  | { mode: "new" }
+  | { mode: "new"; prompt?: string }
   | { mode: "edit"; entry: JournalEntry }
   | { mode: "view"; entry: JournalEntry };
 
 export default function JournalPage() {
+  // useSearchParams (for ?prompt=) needs a Suspense boundary.
+  return (
+    <Suspense fallback={null}>
+      <JournalContent />
+    </Suspense>
+  );
+}
+
+function JournalContent() {
   const [moodFilter, setMoodFilter] = useState<string>("");
   const [areaFilter, setAreaFilter] = useState<string>("");
   const [panel, setPanel] = useState<PanelState>({ mode: "idle" });
+
+  // The dashboard's evening reflection links here with ?prompt=…: open a new entry that starts with it.
+  const params = useSearchParams();
+  const prompt = params.get("prompt");
+  const wantsNew = params.get("new") === "1"; // "New journal entry" in the command palette
+  useEffect(() => {
+    if (prompt) setPanel({ mode: "new", prompt: `${prompt}\n\n` });
+    else if (wantsNew) setPanel({ mode: "new" });
+  }, [prompt, wantsNew]);
 
   const { data: entries, isLoading } = useJournalList({
     limit: 100,
@@ -31,12 +54,13 @@ export default function JournalPage() {
 
   function handleSave(data: Parameters<typeof createMutation.mutate>[0]) {
     if (panel.mode === "edit") {
+      // Open the saved entry so its AI summary appears as soon as it's ready.
       updateMutation.mutate(
         { id: panel.entry.id, data },
-        { onSuccess: () => setPanel({ mode: "idle" }) },
+        { onSuccess: (saved) => setPanel({ mode: "view", entry: saved }) },
       );
     } else {
-      createMutation.mutate(data, { onSuccess: () => setPanel({ mode: "idle" }) });
+      createMutation.mutate(data, { onSuccess: (saved) => setPanel({ mode: "view", entry: saved }) });
     }
   }
 
@@ -55,17 +79,17 @@ export default function JournalPage() {
     panel.mode === "edit" || panel.mode === "view" ? panel.entry.id : undefined;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="-m-4 flex h-[calc(100vh-3.5rem)] overflow-hidden md:-m-6">
       {/* Left — entry list */}
-      <div className="w-80 shrink-0 flex flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--bg-base))]">
+      <div className="w-80 shrink-0 flex flex-col border-r border-border bg-background">
         {/* Header */}
-        <div className="px-4 py-4 border-b border-[hsl(var(--border))]">
+        <div className="px-4 py-4 border-b border-border">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <ScrollText size={18} className="text-[hsl(var(--fg-secondary))]" />
-              <h1 className="font-semibold text-[hsl(var(--fg-primary))]">Journal</h1>
+              <ScrollText size={18} className="text-fg-secondary" />
+              <h1 className="font-semibold text-foreground">Journal</h1>
               {entries && (
-                <span className="text-xs text-[hsl(var(--fg-secondary))]">
+                <span className="text-xs text-fg-secondary">
                   {entries.length}
                 </span>
               )}
@@ -86,8 +110,8 @@ export default function JournalPage() {
               onClick={() => setMoodFilter("")}
               className={`text-xs rounded-full px-2.5 py-0.5 border transition-colors ${
                 moodFilter === ""
-                  ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))]"
-                  : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))]"
+                  ? "border-accent bg-accent/10 text-accent-fg"
+                  : "border-border text-fg-secondary"
               }`}
             >
               All moods
@@ -98,8 +122,8 @@ export default function JournalPage() {
                 onClick={() => setMoodFilter((prev) => (prev === m.value ? "" : m.value))}
                 className={`text-xs rounded-full px-2.5 py-0.5 border transition-colors ${
                   moodFilter === m.value
-                    ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))]"
-                    : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))]"
+                    ? "border-accent bg-accent/10 text-accent-fg"
+                    : "border-border text-fg-secondary"
                 }`}
               >
                 {m.label}
@@ -113,8 +137,8 @@ export default function JournalPage() {
               onClick={() => setAreaFilter("")}
               className={`text-xs rounded-full px-2.5 py-0.5 border transition-colors ${
                 areaFilter === ""
-                  ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))]"
-                  : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))]"
+                  ? "border-accent bg-accent/10 text-accent-fg"
+                  : "border-border text-fg-secondary"
               }`}
             >
               All areas
@@ -125,19 +149,7 @@ export default function JournalPage() {
                 <button
                   key={area.slug}
                   onClick={() => setAreaFilter((prev) => (prev === area.slug ? "" : area.slug))}
-                  className="text-xs rounded-full px-2.5 py-0.5 border transition-colors"
-                  style={
-                    active
-                      ? {
-                          borderColor: area.color,
-                          backgroundColor: `color-mix(in srgb, ${area.color} 15%, transparent)`,
-                          color: area.color,
-                        }
-                      : {
-                          borderColor: "hsl(var(--border))",
-                          color: "hsl(var(--fg-secondary))",
-                        }
-                  }
+                  className={cn("text-xs rounded-full px-2.5 py-0.5 border transition-colors", active ? `${area.border} ${area.soft} ${area.text}` : "border-border text-fg-secondary")}
                 >
                   {area.name}
                 </button>
@@ -157,17 +169,13 @@ export default function JournalPage() {
           )}
 
           {!isLoading && entries?.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-4">
-              <BookOpen size={32} className="text-[hsl(var(--fg-secondary))]" />
-              <p className="text-sm text-[hsl(var(--fg-secondary))]">No entries yet</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPanel({ mode: "new" })}
-              >
-                Write your first entry
-              </Button>
-            </div>
+            <EmptyState
+              icon={BookOpen}
+              title="No entries yet"
+              description="Write freely about your day. The AI picks out themes and mood over time."
+              action={{ label: "Write your first entry", onClick: () => setPanel({ mode: "new" }) }}
+              className="py-10"
+            />
           )}
 
           {entries?.map((entry) => (
@@ -187,8 +195,8 @@ export default function JournalPage() {
       <div className="flex-1 overflow-y-auto p-6">
         {panel.mode === "idle" && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <ScrollText size={40} className="text-[hsl(var(--fg-secondary)/0.4)]" />
-            <p className="text-sm text-[hsl(var(--fg-secondary))]">
+            <ScrollText size={40} className="text-fg-secondary/40" />
+            <p className="text-sm text-fg-secondary">
               Select an entry to read, or write a new one
             </p>
             <Button onClick={() => setPanel({ mode: "new" })}>
@@ -199,11 +207,12 @@ export default function JournalPage() {
 
         {(panel.mode === "new" || panel.mode === "edit") && (
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-sm font-semibold text-[hsl(var(--fg-secondary))] mb-4">
+            <h2 className="text-sm font-semibold text-fg-secondary mb-4">
               {panel.mode === "new" ? "New entry" : "Edit entry"}
             </h2>
             <JournalEditor
               initial={panel.mode === "edit" ? panel.entry : undefined}
+              initialContent={panel.mode === "new" ? panel.prompt : undefined}
               onSave={handleSave}
               onCancel={() =>
                 setPanel(
@@ -222,11 +231,11 @@ export default function JournalPage() {
             {/* Entry header */}
             <div className="flex items-start justify-between mb-6">
               <div>
-                <p className="text-xs text-[hsl(var(--fg-secondary))] mb-1">
+                <p className="text-xs text-fg-secondary mb-1">
                   {format(parseISO(panel.entry.entry_date), "EEEE, MMMM d yyyy")}
                 </p>
                 {panel.entry.title && (
-                  <h2 className="text-xl font-semibold text-[hsl(var(--fg-primary))]">
+                  <h2 className="text-xl font-semibold text-foreground">
                     {panel.entry.title}
                   </h2>
                 )}
@@ -244,7 +253,7 @@ export default function JournalPage() {
             {(panel.entry.mood_tag || (panel.entry.life_area_tags ?? []).length > 0) && (
               <div className="flex flex-wrap gap-2 mb-5">
                 {panel.entry.mood_tag && (
-                  <span className="text-xs rounded-full px-3 py-1 bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))]">
+                  <span className="text-xs rounded-full px-3 py-1 bg-accent/[0.12] text-accent-fg">
                     {MOOD_TAGS.find((m) => m.value === panel.entry.mood_tag)?.label ?? panel.entry.mood_tag}
                   </span>
                 )}
@@ -254,11 +263,7 @@ export default function JournalPage() {
                   return (
                     <span
                       key={slug}
-                      className="text-xs rounded-full px-3 py-1"
-                      style={{
-                        backgroundColor: `color-mix(in srgb, ${area.color} 15%, transparent)`,
-                        color: area.color,
-                      }}
+                      className={cn("text-xs rounded-full px-3 py-1", area.soft, area.text)}
                     >
                       {area.name}
                     </span>
@@ -268,29 +273,12 @@ export default function JournalPage() {
             )}
 
             {/* Content */}
-            <div className="text-sm text-[hsl(var(--fg-primary))] leading-relaxed whitespace-pre-wrap">
+            <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
               {panel.entry.content}
             </div>
 
-            {/* AI summary if present */}
-            {panel.entry.ai_summary && (
-              <div className="mt-8 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
-                <p className="text-xs font-medium text-[hsl(var(--fg-secondary))] mb-2">AI summary</p>
-                <p className="text-sm text-[hsl(var(--fg-primary))]">{panel.entry.ai_summary}</p>
-                {panel.entry.ai_themes && panel.entry.ai_themes.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {panel.entry.ai_themes.map((theme) => (
-                      <span
-                        key={theme}
-                        className="text-xs rounded-full px-2.5 py-0.5 bg-[hsl(var(--fg-secondary)/0.1)] text-[hsl(var(--fg-secondary))]"
-                      >
-                        {theme}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* The list refetches while an analysis is pending, so prefer its copy of the entry. */}
+            <JournalAiSummary entry={entries?.find((e) => e.id === panel.entry.id) ?? panel.entry} />
           </div>
         )}
       </div>

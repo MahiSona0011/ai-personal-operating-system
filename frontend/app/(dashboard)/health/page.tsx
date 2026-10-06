@@ -1,5 +1,5 @@
-import { LifeAreaPage } from "@/components/shared/LifeAreaPage";
+import { LifeAreaPage } from "@/components/areas/LifeAreaPage";
 
 export default function HealthPage() {
-  return <LifeAreaPage areaIds={[5]} />;
+  return <LifeAreaPage areaId={1} />;
 }

@@ -1,19 +1,23 @@
-import json
 import logging
 from datetime import date, datetime, timezone, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.client import get_client
 from app.ai.prompt_builder import build_daily_context, build_weekly_context, build_on_demand_context
 from app.ai import response_parser
 from app.ai.prompts import daily_analysis, weekly_review, on_demand as on_demand_prompts
+from app.ai.prompts import journal as journal_prompts
 from app.core.config import settings
 from app.models.checkin import DailyCheckin
 from app.models.ai_recommendation import AIRecommendation, WeeklyReview
+from app.models.journal import JournalEntry
+from app.services import ai_quota
 
 logger = logging.getLogger(__name__)
+
+JOURNAL_MIN_CHARS = 40  # shorter entries aren't worth a paid call
 
 
 async def analyze_checkin(db: AsyncSession, checkin_id: int, user_id: int) -> None:
@@ -24,10 +28,13 @@ async def analyze_checkin(db: AsyncSession, checkin_id: int, user_id: int) -> No
         logger.error("analyze_checkin: checkin %d not found", checkin_id)
         return
 
-    ctx = await build_daily_context(db, checkin, user_id)
+    if not await ai_quota.has_quota(db, user_id):
+        logger.info("analyze_checkin: user %d is over the daily AI cap", user_id)
+        return
 
     client = get_client()
     try:
+        ctx = await build_daily_context(db, checkin, user_id)
         msg = await client.messages.create(
             model=settings.AI_MODEL_FAST,
             max_tokens=1024,
@@ -95,10 +102,9 @@ async def generate_weekly_review(db: AsyncSession, user_id: int, week_start: dat
         existing.generation_status = "in_progress"
         await db.flush()
 
-    ctx = await build_weekly_context(db, user_id, week_start, week_end)
-
     client = get_client()
     try:
+        ctx = await build_weekly_context(db, user_id, week_start, week_end)
         msg = await client.messages.create(
             model=settings.AI_MODEL_QUALITY,
             max_tokens=2048,
@@ -143,9 +149,23 @@ async def generate_weekly_review(db: AsyncSession, user_id: int, week_start: dat
 
     except Exception as exc:
         logger.error("generate_weekly_review failed: %s", exc, exc_info=True)
-        existing.generation_status = "failed"
-        await db.commit()
+        await db.rollback()
+        await _mark_weekly_failed(db, user_id, week_start, week_end)
         return None
+
+
+async def _mark_weekly_failed(db: AsyncSession, user_id: int, week_start: date, week_end: date) -> None:
+    """Record the failure on the review row, creating it if the rollback took it away."""
+    review = await db.scalar(
+        select(WeeklyReview).where(WeeklyReview.user_id == user_id, WeeklyReview.week_start_date == week_start)
+    )
+    if review is None:
+        review = WeeklyReview(
+            user_id=user_id, week_start_date=week_start, week_end_date=week_end, avg_scores={}
+        )
+        db.add(review)
+    review.generation_status = "failed"
+    await db.commit()
 
 
 async def on_demand_analysis(
@@ -199,3 +219,60 @@ async def on_demand_analysis(
         logger.error("on_demand_analysis failed: %s", exc, exc_info=True)
         await db.rollback()
         return None
+
+
+async def analyze_journal(db: AsyncSession, entry_id: int, user_id: int) -> None:
+    """Summary, themes and sentiment for one journal entry. Never raises; the outcome is `ai_status`."""
+    entry = await db.scalar(
+        select(JournalEntry).where(
+            JournalEntry.id == entry_id, JournalEntry.user_id == user_id, JournalEntry.deleted_at.is_(None)
+        )
+    )
+    if not entry:
+        logger.error("analyze_journal: entry %d not found", entry_id)
+        return
+
+    if len(entry.content.strip()) < JOURNAL_MIN_CHARS or not await ai_quota.has_quota(db, user_id):
+        entry.ai_status = "skipped"
+        await db.commit()
+        return
+
+    client = get_client()
+    try:
+        msg = await client.messages.create(
+            model=settings.AI_MODEL_FAST,
+            max_tokens=512,
+            system=[{"type": "text", "text": journal_prompts.SYSTEM, "cache_control": {"type": "ephemeral"}}],
+            messages=[{
+                "role": "user",
+                "content": journal_prompts.USER_TEMPLATE.format(
+                    entry_date=entry.entry_date,
+                    mood=entry.mood_tag or "not set",
+                    content=entry.content.replace("</journal_entry>", ""),
+                ),
+            }],
+        )
+        parsed = response_parser.parse_journal(msg.content[0].text)
+
+        entry.ai_summary = parsed["summary"]
+        entry.ai_themes = parsed["themes"]
+        entry.ai_sentiment = parsed["sentiment"]
+        entry.ai_status = "completed"
+        db.add(AIRecommendation(
+            user_id=user_id,
+            recommendation_type="journal_analysis",
+            source_type="journal",
+            source_id=entry_id,
+            model_used=settings.AI_MODEL_FAST,
+            prompt_tokens=msg.usage.input_tokens,
+            completion_tokens=msg.usage.output_tokens,
+            raw_response=parsed,
+            summary=parsed["summary"],
+        ))
+        await db.commit()
+
+    except Exception as exc:
+        logger.error("analyze_journal failed: %s", exc, exc_info=True)
+        await db.rollback()
+        await db.execute(update(JournalEntry).where(JournalEntry.id == entry_id).values(ai_status="failed"))
+        await db.commit()

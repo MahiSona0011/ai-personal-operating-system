@@ -1,5 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils/cn";
+import { tokenColor } from "@/lib/utils/color";
 
 interface SliderProps {
   value: number;
@@ -18,7 +19,7 @@ export function Slider({
   min = 1,
   max = 10,
   step = 1,
-  color = "hsl(var(--accent))",
+  color = tokenColor("accent"),
   className,
   disabled,
 }: SliderProps) {
@@ -36,11 +37,10 @@ export function Slider({
       </div>
       {/* Visual thumb */}
       <div
-        className="absolute w-4 h-4 rounded-full pointer-events-none transition-[left] duration-75"
+        className="absolute w-4 h-4 rounded-full pointer-events-none transition-[left] duration-75 ring-[3px] ring-surface shadow-sm"
         style={{
           left: `calc(${pct}% - 8px)`,
           backgroundColor: color,
-          boxShadow: `0 0 0 3px hsl(var(--bg-surface)), 0 1px 3px rgba(0,0,0,0.2)`,
         }}
       />
       {/* Native input — invisible, handles all interaction */}

@@ -27,6 +27,6 @@ Return exactly this JSON shape:
 {{
   "answer": "direct answer to the question",
   "supporting_data": ["data point 1", "data point 2"],
-  "action_items": [{{"action": "specific next step", "area": "area_slug", "priority": 1}}],
+  "action_items": [{{"action": "specific next step", "area": "health|mind|relationships|work|money|growth", "priority": 1}}],
   "caveat": "any important limitation or missing data (or null)"
 }}"""

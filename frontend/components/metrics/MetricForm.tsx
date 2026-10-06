@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LIFE_AREAS, METRIC_KEYS } from "@/types";
 import type { Metric } from "@/types";
+import { tokenColor } from "@/lib/utils/color";
+import { cn } from "@/lib/utils/cn";
 
 interface MetricFormProps {
   initial?: Metric;
@@ -17,14 +19,19 @@ interface MetricFormProps {
   }) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  /** Pre-select and hide the area picker (for logging from an area page). */
+  lockedArea?: number;
+  /** Pre-select and hide the metric picker; requires `lockedArea`. */
+  lockedKey?: string;
 }
 
 const CUSTOM_KEY = "__custom__";
 
-export function MetricForm({ initial, onSave, onCancel, isLoading }: MetricFormProps) {
-  const [areaId, setAreaId] = useState<number>(initial?.life_area_id ?? LIFE_AREAS[0].id);
+export function MetricForm({ initial, onSave, onCancel, isLoading, lockedArea, lockedKey }: MetricFormProps) {
+  const startArea = initial?.life_area_id ?? lockedArea ?? LIFE_AREAS[0].id;
+  const [areaId, setAreaId] = useState<number>(startArea);
   const [selectedKey, setSelectedKey] = useState<string>(
-    initial?.metric_key ?? METRIC_KEYS[LIFE_AREAS[0].id]?.[0]?.key ?? ""
+    initial?.metric_key ?? lockedKey ?? METRIC_KEYS[startArea]?.[0]?.key ?? ""
   );
   const [customKey, setCustomKey] = useState("");
   const [metricDate, setMetricDate] = useState(
@@ -35,7 +42,9 @@ export function MetricForm({ initial, onSave, onCancel, isLoading }: MetricFormP
       ? String(initial.value_numeric)
       : ""
   );
-  const [unit, setUnit] = useState(initial?.unit ?? "");
+  const [unit, setUnit] = useState(
+    initial?.unit ?? (lockedKey ? METRIC_KEYS[startArea]?.find((p) => p.key === lockedKey)?.defaultUnit ?? "" : "")
+  );
 
   const presets = METRIC_KEYS[areaId] ?? [];
   const isCustom = selectedKey === CUSTOM_KEY;
@@ -48,7 +57,7 @@ export function MetricForm({ initial, onSave, onCancel, isLoading }: MetricFormP
       setMetricDate(initial.metric_date);
       setValue(initial.value_numeric !== null && initial.value_numeric !== undefined ? String(initial.value_numeric) : "");
       setUnit(initial.unit ?? "");
-    } else {
+    } else if (!lockedKey) {
       const defaultPresets = METRIC_KEYS[areaId] ?? [];
       setSelectedKey(defaultPresets[0]?.key ?? "");
       setValue("");
@@ -88,37 +97,28 @@ export function MetricForm({ initial, onSave, onCancel, isLoading }: MetricFormP
   return (
     <div className="flex flex-col gap-5">
       {/* Area */}
+      {lockedArea === undefined && (
       <div>
-        <p className="text-xs font-medium text-[hsl(var(--fg-secondary))] mb-2">Life area</p>
+        <p className="text-xs font-medium text-fg-secondary mb-2">Life area</p>
         <div className="flex flex-wrap gap-2">
           {LIFE_AREAS.map((area) => (
             <button
               key={area.id}
               type="button"
               onClick={() => handleAreaChange(area.id)}
-              className="text-xs rounded-full px-3 py-1 border transition-colors"
-              style={
-                areaId === area.id
-                  ? {
-                      borderColor: area.color,
-                      backgroundColor: `color-mix(in srgb, ${area.color} 15%, transparent)`,
-                      color: area.color,
-                    }
-                  : {
-                      borderColor: "hsl(var(--border))",
-                      color: "hsl(var(--fg-secondary))",
-                    }
-              }
+              className={cn("text-xs rounded-full px-3 py-1 border transition-colors", areaId === area.id ? `${area.border} ${area.soft} ${area.text}` : "border-border text-fg-secondary")}
             >
               {area.name}
             </button>
           ))}
         </div>
       </div>
+      )}
 
       {/* Metric key */}
+      {!lockedKey && (
       <div>
-        <p className="text-xs font-medium text-[hsl(var(--fg-secondary))] mb-2">Metric</p>
+        <p className="text-xs font-medium text-fg-secondary mb-2">Metric</p>
         <div className="flex flex-wrap gap-2 mb-2">
           {presets.map((p) => (
             <button
@@ -127,8 +127,8 @@ export function MetricForm({ initial, onSave, onCancel, isLoading }: MetricFormP
               onClick={() => handleKeyChange(p.key)}
               className={`text-xs rounded-full px-3 py-1 border transition-colors ${
                 selectedKey === p.key
-                  ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))]"
-                  : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))] hover:border-[hsl(var(--accent)/0.5)]"
+                  ? "border-accent bg-accent/[0.12] text-accent-fg"
+                  : "border-border text-fg-secondary hover:border-accent/50"
               }`}
             >
               {p.label}
@@ -139,8 +139,8 @@ export function MetricForm({ initial, onSave, onCancel, isLoading }: MetricFormP
             onClick={() => handleKeyChange(CUSTOM_KEY)}
             className={`text-xs rounded-full px-3 py-1 border transition-colors ${
               isCustom
-                ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))]"
-                : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))] hover:border-[hsl(var(--accent)/0.5)]"
+                ? "border-accent bg-accent/[0.12] text-accent-fg"
+                : "border-border text-fg-secondary hover:border-accent/50"
             }`}
           >
             Custom…
@@ -154,20 +154,21 @@ export function MetricForm({ initial, onSave, onCancel, isLoading }: MetricFormP
           />
         )}
       </div>
+      )}
 
       {/* Date + value + unit */}
       <div className="flex gap-3">
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-medium text-[hsl(var(--fg-secondary))]">Date</p>
+          <p className="text-xs font-medium text-fg-secondary">Date</p>
           <input
             type="date"
             value={metricDate}
             onChange={(e) => setMetricDate(e.target.value)}
-            className="rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3 py-1.5 text-sm text-[hsl(var(--fg-primary))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--accent))]"
+            className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
         <div className="flex flex-col gap-1 flex-1">
-          <p className="text-xs font-medium text-[hsl(var(--fg-secondary))]">Value</p>
+          <p className="text-xs font-medium text-fg-secondary">Value</p>
           <Input
             type="number"
             placeholder="0"
@@ -177,7 +178,7 @@ export function MetricForm({ initial, onSave, onCancel, isLoading }: MetricFormP
           />
         </div>
         <div className="flex flex-col gap-1 w-24">
-          <p className="text-xs font-medium text-[hsl(var(--fg-secondary))]">Unit</p>
+          <p className="text-xs font-medium text-fg-secondary">Unit</p>
           <Input
             placeholder="kg, min…"
             value={unit}

@@ -22,6 +22,6 @@ export const sessionsApi = {
 
   delete: (id: number) => apiClient.delete(`/sessions/${id}`),
 
-  stats: (days = 84) =>
-    apiClient.get<SessionStats>("/sessions/stats", { params: { days } }).then((r) => r.data),
+  stats: (days = 84, filters?: { session_type?: string; life_area_id?: number }) =>
+    apiClient.get<SessionStats>("/sessions/stats", { params: { days, ...filters } }).then((r) => r.data),
 };

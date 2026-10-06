@@ -3,12 +3,13 @@ from typing import Optional
 from sqlalchemy import String, Text, SmallInteger, BigInteger, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, TimestampMixin
+from app.models.base import PK_TYPE
 
 
 class WorkSession(Base, TimestampMixin):
     __tablename__ = "sessions"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(PK_TYPE, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     life_area_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("life_areas.id"), nullable=False)
     goal_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("goals.id"), nullable=True)

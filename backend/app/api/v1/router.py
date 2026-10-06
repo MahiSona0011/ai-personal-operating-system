@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, checkins, habits, goals, sessions, analysis, dashboard, journals, metrics, uploads
+from app.api.v1.endpoints import auth, checkins, habits, goals, sessions, analysis, dashboard, journals, metrics, uploads, notifications, export, areas
 
 router = APIRouter(prefix="/api/v1")
 
@@ -13,3 +13,6 @@ router.include_router(dashboard.router)
 router.include_router(journals.router)
 router.include_router(metrics.router)
 router.include_router(uploads.router)
+router.include_router(notifications.router)
+router.include_router(export.router)
+router.include_router(areas.router)

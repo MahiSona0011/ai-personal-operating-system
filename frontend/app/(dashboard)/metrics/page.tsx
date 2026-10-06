@@ -15,11 +15,20 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricCard } from "@/components/metrics/MetricCard";
 import { MetricForm } from "@/components/metrics/MetricForm";
-import { useMetricList, useMetricHistory, useMetricMutations } from "@/lib/hooks/useMetrics";
+import { useMetricList, useMetricMutations } from "@/lib/hooks/useMetrics";
+import { useMetricSeries } from "@/lib/hooks/useDashboard";
+import { ChartCard } from "@/components/ui/chart-card";
+import { LOWER_IS_BETTER, formatMetricValue } from "@/lib/metrics";
+import { summarizeSeries } from "@/lib/chart-summary";
+import { DEFAULT_RANGE, type RangeDays } from "@/lib/range";
 import { LIFE_AREAS, METRIC_KEYS } from "@/types";
 import type { Metric } from "@/types";
 import type { CreateMetricData, UpdateMetricData } from "@/lib/api/metrics";
+import { chartColors, gridProps, axisProps, tooltipCursor } from "@/components/charts/chart-theme";
+import { ChartTooltip } from "@/components/charts/chart-tooltip";
+import { cn } from "@/lib/utils/cn";
 
+import { EmptyState } from "@/components/ui/empty-state";
 type PanelState =
   | { mode: "idle" }
   | { mode: "new" }
@@ -37,10 +46,11 @@ export default function MetricsPage() {
     metric_key: keyFilter || undefined,
   });
 
+  const [range, setRange] = useState<RangeDays>(DEFAULT_RANGE);
   const viewMetric = panel.mode === "view" || panel.mode === "edit" ? panel.metric : null;
-  const { data: history } = useMetricHistory(
-    viewMetric?.life_area_id ?? null,
-    viewMetric?.metric_key ?? null
+  const { data: series, isLoading: seriesLoading } = useMetricSeries(
+    { key: viewMetric?.metric_key ?? "", area_id: viewMetric?.life_area_id, days: range },
+    viewMetric !== null
   );
 
   const { createMutation, updateMutation, deleteMutation } = useMetricMutations();
@@ -75,27 +85,20 @@ export default function MetricsPage() {
   const selectedId = panel.mode === "edit" || panel.mode === "view" ? panel.metric.id : undefined;
 
   const areaPresets = areaFilter ? (METRIC_KEYS[areaFilter] ?? []) : [];
-  const chartData = history
-    ? [...history]
-        .sort((a, b) => a.metric_date.localeCompare(b.metric_date))
-        .map((m) => ({
-          date: format(parseISO(m.metric_date), "MMM d"),
-          value: m.value_numeric,
-        }))
-    : [];
+  const chartData = series?.points.map((p) => ({ date: p.date, value: p.value })) ?? [];
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="-m-4 flex h-[calc(100vh-3.5rem)] overflow-hidden md:-m-6">
       {/* Left — metric list */}
-      <div className="w-80 shrink-0 flex flex-col border-r border-[hsl(var(--border))] bg-[hsl(var(--bg-base))]">
+      <div className="w-80 shrink-0 flex flex-col border-r border-border bg-background">
         {/* Header */}
-        <div className="px-4 py-4 border-b border-[hsl(var(--border))]">
+        <div className="px-4 py-4 border-b border-border">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Activity size={18} className="text-[hsl(var(--fg-secondary))]" />
-              <h1 className="font-semibold text-[hsl(var(--fg-primary))]">Metrics</h1>
+              <Activity size={18} className="text-fg-secondary" />
+              <h1 className="font-semibold text-foreground">Metrics</h1>
               {metrics && (
-                <span className="text-xs text-[hsl(var(--fg-secondary))]">{metrics.length}</span>
+                <span className="text-xs text-fg-secondary">{metrics.length}</span>
               )}
             </div>
             <Button
@@ -114,8 +117,8 @@ export default function MetricsPage() {
               onClick={() => { setAreaFilter(null); setKeyFilter(""); }}
               className={`text-xs rounded-full px-2.5 py-0.5 border transition-colors ${
                 areaFilter === null
-                  ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))]"
-                  : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))]"
+                  ? "border-accent bg-accent/10 text-accent-fg"
+                  : "border-border text-fg-secondary"
               }`}
             >
               All
@@ -129,19 +132,7 @@ export default function MetricsPage() {
                     setAreaFilter((prev) => (prev === area.id ? null : area.id));
                     setKeyFilter("");
                   }}
-                  className="text-xs rounded-full px-2.5 py-0.5 border transition-colors"
-                  style={
-                    active
-                      ? {
-                          borderColor: area.color,
-                          backgroundColor: `color-mix(in srgb, ${area.color} 15%, transparent)`,
-                          color: area.color,
-                        }
-                      : {
-                          borderColor: "hsl(var(--border))",
-                          color: "hsl(var(--fg-secondary))",
-                        }
-                  }
+                  className={cn("text-xs rounded-full px-2.5 py-0.5 border transition-colors", active ? `${area.border} ${area.soft} ${area.text}` : "border-border text-fg-secondary")}
                 >
                   {area.name}
                 </button>
@@ -156,8 +147,8 @@ export default function MetricsPage() {
                 onClick={() => setKeyFilter("")}
                 className={`text-xs rounded-full px-2.5 py-0.5 border transition-colors ${
                   keyFilter === ""
-                    ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))]"
-                    : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))]"
+                    ? "border-accent bg-accent/10 text-accent-fg"
+                    : "border-border text-fg-secondary"
                 }`}
               >
                 All metrics
@@ -168,8 +159,8 @@ export default function MetricsPage() {
                   onClick={() => setKeyFilter((prev) => (prev === p.key ? "" : p.key))}
                   className={`text-xs rounded-full px-2.5 py-0.5 border transition-colors ${
                     keyFilter === p.key
-                      ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.1)] text-[hsl(var(--accent))]"
-                      : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))]"
+                      ? "border-accent bg-accent/10 text-accent-fg"
+                      : "border-border text-fg-secondary"
                   }`}
                 >
                   {p.label}
@@ -190,13 +181,13 @@ export default function MetricsPage() {
           )}
 
           {!isLoading && metrics?.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-4">
-              <Activity size={32} className="text-[hsl(var(--fg-secondary))]" />
-              <p className="text-sm text-[hsl(var(--fg-secondary))]">No readings yet</p>
-              <Button variant="outline" size="sm" onClick={() => setPanel({ mode: "new" })}>
-                Log your first reading
-              </Button>
-            </div>
+            <EmptyState
+              icon={Activity}
+              title="No readings yet"
+              description="A reading is one number you track over time, like sleep hours or weight. Log a few and each gets a trend chart."
+              action={{ label: "Log your first reading", onClick: () => setPanel({ mode: "new" }) }}
+              className="py-10"
+            />
           )}
 
           {metrics?.map((metric) => (
@@ -216,8 +207,8 @@ export default function MetricsPage() {
       <div className="flex-1 overflow-y-auto p-6">
         {panel.mode === "idle" && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <Activity size={40} className="text-[hsl(var(--fg-secondary)/0.4)]" />
-            <p className="text-sm text-[hsl(var(--fg-secondary))]">
+            <Activity size={40} className="text-fg-secondary/40" />
+            <p className="text-sm text-fg-secondary">
               Select a reading to view its history, or log a new one
             </p>
             <Button onClick={() => setPanel({ mode: "new" })}>
@@ -228,7 +219,7 @@ export default function MetricsPage() {
 
         {(panel.mode === "new" || panel.mode === "edit") && (
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-sm font-semibold text-[hsl(var(--fg-secondary))] mb-4">
+            <h2 className="text-sm font-semibold text-fg-secondary mb-4">
               {panel.mode === "new" ? "Log a reading" : "Edit reading"}
             </h2>
             <MetricForm
@@ -259,28 +250,24 @@ export default function MetricsPage() {
                 <>
                   <div className="flex items-start justify-between mb-6">
                     <div>
-                      <p className="text-xs text-[hsl(var(--fg-secondary))] mb-1">
+                      <p className="text-xs text-fg-secondary mb-1">
                         {format(parseISO(panel.metric.metric_date), "EEEE, MMMM d yyyy")}
                       </p>
                       <div className="flex items-baseline gap-2">
-                        <h2 className="text-2xl font-bold text-[hsl(var(--fg-primary))]">
+                        <h2 className="text-2xl font-bold text-foreground">
                           {panel.metric.value_numeric !== null ? panel.metric.value_numeric : "—"}
                         </h2>
                         {panel.metric.unit && (
-                          <span className="text-sm text-[hsl(var(--fg-secondary))]">
+                          <span className="text-sm text-fg-secondary">
                             {panel.metric.unit}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-[hsl(var(--fg-secondary))]">{keyLabel}</span>
+                        <span className="text-sm text-fg-secondary">{keyLabel}</span>
                         {area && (
                           <span
-                            className="text-xs rounded-full px-2.5 py-0.5"
-                            style={{
-                              backgroundColor: `color-mix(in srgb, ${area.color} 15%, transparent)`,
-                              color: area.color,
-                            }}
+                            className={cn("text-xs rounded-full px-2.5 py-0.5", area.soft, area.text)}
                           >
                             {area.name}
                           </span>
@@ -297,57 +284,49 @@ export default function MetricsPage() {
                   </div>
 
                   {/* History chart */}
-                  {chartData.length > 1 && (
-                    <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4">
-                      <p className="text-xs font-medium text-[hsl(var(--fg-secondary))] mb-4">
-                        {keyLabel} history ({chartData.length} readings)
-                      </p>
-                      <ResponsiveContainer width="100%" height={180}>
-                        <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke="hsl(var(--border))"
-                            vertical={false}
-                          />
-                          <XAxis
-                            dataKey="date"
-                            tick={{ fontSize: 11, fill: "hsl(var(--fg-secondary))" }}
-                            axisLine={false}
-                            tickLine={false}
-                          />
-                          <YAxis
-                            tick={{ fontSize: 11, fill: "hsl(var(--fg-secondary))" }}
-                            axisLine={false}
-                            tickLine={false}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              background: "hsl(var(--bg-surface))",
-                              border: "1px solid hsl(var(--border))",
-                              borderRadius: 8,
-                              fontSize: 12,
-                            }}
-                            labelStyle={{ color: "hsl(var(--fg-secondary))" }}
-                            itemStyle={{ color: "hsl(var(--accent))" }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke="hsl(var(--accent))"
-                            strokeWidth={2}
-                            dot={{ r: 3, fill: "hsl(var(--accent))" }}
-                            activeDot={{ r: 5 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
+                  <ChartCard
+                    title={`${keyLabel} history`}
+                    value={series?.latest ? `${formatMetricValue(series.latest.value)}${series.unit ? ` ${series.unit}` : ""}` : undefined}
+                    delta={series?.latest ? (series.delta ?? null) : undefined}
+                    invertDelta={LOWER_IS_BETTER.has(panel.metric.metric_key)}
+                    deltaSuffix={series?.delta != null ? "vs previous period" : undefined}
+                    range={range}
+                    onRangeChange={setRange}
+                    loading={seriesLoading}
+                    height={200}
+                    empty={
+                      chartData.length === 0
+                        ? {
+                            icon: Activity,
+                            title: "No readings in this range",
+                            description: `Pick a longer range, or log more ${keyLabel.toLowerCase()} readings to see a trend.`,
+                          }
+                        : undefined
+                    }
+                  >
+                    <div role="img" aria-label={summarizeSeries(keyLabel, range, chartData.map((d) => d.value))} className="h-full w-full">
+                      <div aria-hidden className="h-full w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                            <CartesianGrid {...gridProps} />
+                            <XAxis dataKey="date" {...axisProps} tickFormatter={(d: string) => format(parseISO(d), "MMM d")} interval="preserveStartEnd" minTickGap={32} />
+                            <YAxis {...axisProps} domain={["auto", "auto"]} />
+                            <Tooltip content={<ChartTooltip />} cursor={tooltipCursor} />
+                            <Line
+                              type="monotone"
+                              dataKey="value"
+                              name={keyLabel}
+                              stroke={chartColors.score}
+                              strokeWidth={2}
+                              dot={{ r: 3, fill: chartColors.score }}
+                              activeDot={{ r: 5 }}
+                              connectNulls={false}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
-                  )}
-
-                  {chartData.length === 1 && (
-                    <p className="text-xs text-[hsl(var(--fg-secondary))] mt-4">
-                      Log more {keyLabel} readings to see a trend chart.
-                    </p>
-                  )}
+                  </ChartCard>
                 </>
               );
             })()}

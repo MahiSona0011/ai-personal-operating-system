@@ -1,6 +1,9 @@
 from datetime import datetime
-from sqlalchemy import DateTime, func
+from sqlalchemy import BigInteger, DateTime, Integer, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+# BigInteger on Postgres; plain Integer on SQLite, where only INTEGER PRIMARY KEY auto-increments.
+PK_TYPE = BigInteger().with_variant(Integer, "sqlite")
 
 
 class Base(DeclarativeBase):

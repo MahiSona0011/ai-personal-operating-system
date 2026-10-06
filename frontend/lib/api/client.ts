@@ -36,6 +36,8 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    original._retry = true; // queued requests too: a second 401 after a fresh token is a real 401
+
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
@@ -45,7 +47,6 @@ apiClient.interceptors.response.use(
       });
     }
 
-    original._retry = true;
     isRefreshing = true;
 
     try {
@@ -54,12 +55,20 @@ apiClient.interceptors.response.use(
       const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refresh_token: refreshToken }, { withCredentials: true });
       const newToken: string = data.access_token;
       sessionStorage.setItem("access_token", newToken);
+      if (data.refresh_token) {
+        // Refresh tokens rotate: the one we just used is retired, and presenting it again signs the user out.
+        useAuthStore.setState({ accessToken: newToken, refreshToken: data.refresh_token });
+        document.cookie = `refresh_token=${data.refresh_token}; path=/; max-age=${7 * 24 * 3600}; SameSite=Lax`;
+      }
       processQueue(null, newToken);
       original.headers.Authorization = `Bearer ${newToken}`;
       return apiClient(original);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      sessionStorage.removeItem("access_token");
+      // Drop the session cookie too, or the middleware sends /login straight back to the app and we loop.
+      const { useAuthStore } = await import("@/store/authStore");
+      useAuthStore.getState().clearAuth();
+      document.cookie = "refresh_token=; path=/; max-age=0";
       window.location.href = "/login";
       return Promise.reject(refreshError);
     } finally {

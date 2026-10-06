@@ -2,9 +2,9 @@ import logging
 from datetime import date, timedelta
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, status
-from sqlalchemy import select, func
+from sqlalchemy import select
 
-from app.api.deps import CurrentUser, DB
+from app.api.deps import AIQuota, CurrentUser, DB, SchedulerAuth
 from app.models.ai_recommendation import AIRecommendation, WeeklyReview
 from app.models.checkin import DailyCheckin
 from app.schemas.analysis import (
@@ -12,30 +12,16 @@ from app.schemas.analysis import (
     RecommendationResponse, WeeklyReviewRequest, WeeklyReviewResponse,
 )
 from app.ai import ai_service
-from app.core.config import settings
+from app.core.limiter import AI_LIMIT, limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 
-async def _check_daily_ai_limit(db, user_id: int) -> None:
-    today = date.today()
-    count = await db.scalar(
-        select(func.count(AIRecommendation.id)).where(
-            AIRecommendation.user_id == user_id,
-            AIRecommendation.recommendation_type == "on_demand",
-            func.date(AIRecommendation.created_at) == today,
-        )
-    )
-    if count >= settings.AI_MAX_DAILY_CALLS_PER_USER:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Daily AI limit reached ({settings.AI_MAX_DAILY_CALLS_PER_USER}/day).",
-        )
-
-
-@router.post("/checkin/{checkin_id}", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/checkin/{checkin_id}", status_code=status.HTTP_202_ACCEPTED, dependencies=[AIQuota])
+@limiter.limit(AI_LIMIT)
 async def retrigger_checkin_analysis(
+    request: Request,
     checkin_id: int,
     background_tasks: BackgroundTasks,
     current_user: CurrentUser,
@@ -62,13 +48,14 @@ async def retrigger_checkin_analysis(
     return {"message": "Analysis queued"}
 
 
-@router.post("/on-demand", response_model=RecommendationResponse)
+@router.post("/on-demand", response_model=RecommendationResponse, dependencies=[AIQuota])
+@limiter.limit(AI_LIMIT)
 async def ask_on_demand(
+    request: Request,
     data: OnDemandRequest,
     current_user: CurrentUser,
     db: DB,
 ):
-    await _check_daily_ai_limit(db, current_user.id)
     rec = await ai_service.on_demand_analysis(
         db, current_user.id, data.question, data.context_areas
     )
@@ -122,8 +109,12 @@ async def update_recommendation(
     return rec
 
 
-@router.post("/reviews/weekly", response_model=WeeklyReviewResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/reviews/weekly", response_model=WeeklyReviewResponse, status_code=status.HTTP_202_ACCEPTED, dependencies=[AIQuota]
+)
+@limiter.limit(AI_LIMIT)
 async def generate_weekly(
+    request: Request,
     data: WeeklyReviewRequest,
     background_tasks: BackgroundTasks,
     current_user: CurrentUser,
@@ -173,3 +164,19 @@ async def list_weekly_reviews(
         .limit(limit)
     )
     return list(result.all())
+
+
+@router.post("/weekly-reviews/generate-all", status_code=status.HTTP_202_ACCEPTED, dependencies=[SchedulerAuth])
+async def generate_all_weekly_reviews(
+    background_tasks: BackgroundTasks,
+    week_start: date | None = Query(None, description="Monday to review; defaults to each user's just-ended week"),
+):
+    """Scheduler entry point: a weekly review for every verified, active user who doesn't have one.
+
+    Runs in the background, one user at a time, and honours each user's daily AI cap. Idempotent.
+    """
+    from app.ai import batch
+    from app.core.database import AsyncSessionLocal
+
+    background_tasks.add_task(batch.generate_all_weekly, AsyncSessionLocal, week_start=week_start)
+    return {"message": "Weekly review generation started"}

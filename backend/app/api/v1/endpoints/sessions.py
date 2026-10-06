@@ -1,16 +1,19 @@
-from datetime import datetime, timezone, timedelta, date
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select, func, extract
+from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DB
 from app.models.session import WorkSession
-from app.models.life_area import LifeArea
 from app.schemas.session import (
     CreateSessionRequest, UpdateSessionRequest, SessionResponse, SessionStatsResponse,
 )
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
+
+
+def _aware(dt: datetime) -> datetime:
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)  # SQLite hands back naive datetimes
 
 
 async def _get_session_or_404(db, user_id: int, session_id: int) -> WorkSession:
@@ -67,7 +70,7 @@ async def update(session_id: int, data: UpdateSessionRequest, current_user: Curr
     for field, value in updates.items():
         setattr(session, field, value)
     if session.ended_at and session.duration_minutes is None:
-        delta = session.ended_at - session.started_at
+        delta = _aware(session.ended_at) - _aware(session.started_at)
         session.duration_minutes = max(1, int(delta.total_seconds() / 60))
     await db.flush()
     return session
@@ -85,16 +88,21 @@ async def stats(
     current_user: CurrentUser,
     db: DB,
     days: int = Query(84, ge=7, le=365),
+    session_type: Optional[str] = Query(None, description="Only this type, e.g. deep_work"),
+    life_area_id: Optional[int] = Query(None, description="Only this life area"),
 ):
     since = datetime.now(timezone.utc) - timedelta(days=days)
 
-    rows = await db.execute(
-        select(WorkSession).where(
-            WorkSession.user_id == current_user.id,
-            WorkSession.deleted_at.is_(None),
-            WorkSession.started_at >= since,
-        )
+    q = select(WorkSession).where(
+        WorkSession.user_id == current_user.id,
+        WorkSession.deleted_at.is_(None),
+        WorkSession.started_at >= since,
     )
+    if session_type:
+        q = q.where(WorkSession.session_type == session_type)
+    if life_area_id is not None:
+        q = q.where(WorkSession.life_area_id == life_area_id)
+    rows = await db.execute(q)
     sessions = list(rows.scalars().all())
 
     total_minutes = sum(s.duration_minutes or 0 for s in sessions)

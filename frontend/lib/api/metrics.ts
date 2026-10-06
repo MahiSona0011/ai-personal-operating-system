@@ -1,4 +1,5 @@
 import apiClient from "./client";
+import { DEFAULT_RANGE, type RangeDays } from "@/lib/range";
 import type { Metric } from "@/types";
 
 export interface ListMetricsParams {
@@ -24,7 +25,29 @@ export interface UpdateMetricData {
   unit?: string;
 }
 
+export interface MetricSeriesParams {
+  key: string;
+  area_id?: number;
+  days?: RangeDays;
+}
+
+export interface MetricSeries {
+  key: string;
+  area_id: number | null;
+  days: RangeDays;
+  unit: string | null;
+  /** One point per day with data; several entries on a day are averaged. */
+  points: { date: string; value: number; n: number }[];
+  latest: { date: string; value: number; n: number } | null;
+  average: number | null;
+  /** Average against the previous period of equal length. */
+  delta: number | null;
+}
+
 export const metricsApi = {
+  series: ({ key, area_id, days = DEFAULT_RANGE }: MetricSeriesParams) =>
+    apiClient.get<MetricSeries>("/metrics/series", { params: { key, area_id, days } }).then((r) => r.data),
+
   list: (params?: ListMetricsParams) =>
     apiClient.get<Metric[]>("/metrics", { params }).then((r) => r.data),
 

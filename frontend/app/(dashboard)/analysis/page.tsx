@@ -8,7 +8,9 @@ import { InsightCard } from "@/components/analysis/InsightCard";
 import { OnDemandPanel } from "@/components/analysis/OnDemandPanel";
 import { useRecommendations, useWeeklyReviews, useAnalysisMutations } from "@/lib/hooks/useAnalysis";
 import type { AIRecommendation } from "@/types";
+import { tokenColor } from "@/lib/utils/color";
 
+import { EmptyState } from "@/components/ui/empty-state";
 export default function AnalysisPage() {
   const { data: recs, isLoading: recsLoading } = useRecommendations({ limit: 20 });
   const { data: weeklies, isLoading: weekliesLoading } = useWeeklyReviews();
@@ -41,8 +43,8 @@ export default function AnalysisPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--fg-primary))]">AI Analysis</h1>
-          <p className="text-sm text-[hsl(var(--fg-secondary))] mt-0.5">
+          <h1 className="text-2xl font-bold text-foreground">AI Analysis</h1>
+          <p className="text-sm text-fg-secondary mt-0.5">
             Powered by Claude · {recs?.length ?? 0} insights
           </p>
         </div>
@@ -68,33 +70,32 @@ export default function AnalysisPage() {
 
           {/* Latest weekly review */}
           {!weekliesLoading && latestWeekly && latestWeekly.generation_status === "completed" && (
-            <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 flex flex-col gap-3"
-              style={{ borderTopColor: "hsl(var(--area-career))", borderTopWidth: 2 }}>
+            <div className="rounded-xl border border-border border-t-2 border-t-accent bg-surface p-4 flex flex-col gap-3">
               <div className="flex items-center gap-2">
-                <Brain size={14} className="text-[hsl(var(--area-career))]" />
-                <span className="text-xs font-medium text-[hsl(var(--area-career))]">Weekly Review</span>
-                <span className="text-xs text-[hsl(var(--fg-secondary))] ml-auto">
+                <Brain size={14} className="text-accent-fg" />
+                <span className="text-xs font-medium text-accent-fg">Weekly Review</span>
+                <span className="text-xs text-fg-secondary ml-auto">
                   w/o {format(parseISO(latestWeekly.week_start_date), "MMM d")}
                 </span>
               </div>
               {latestWeekly.ai_narrative && (
-                <p className="text-sm text-[hsl(var(--fg-primary))] leading-relaxed line-clamp-6">
+                <p className="text-sm text-foreground leading-relaxed line-clamp-6">
                   {latestWeekly.ai_narrative}
                 </p>
               )}
               {latestWeekly.highlights && latestWeekly.highlights.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-[hsl(var(--fg-secondary))] mb-1 uppercase tracking-wide">Highlights</p>
+                  <p className="text-xs font-medium text-fg-secondary mb-1 uppercase tracking-wide">Highlights</p>
                   {latestWeekly.highlights.map((h, i) => (
-                    <p key={i} className="text-xs text-[hsl(var(--fg-primary))]">✓ {h}</p>
+                    <p key={i} className="text-xs text-foreground">✓ {h}</p>
                   ))}
                 </div>
               )}
               {latestWeekly.improvement_areas && latestWeekly.improvement_areas.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-[hsl(var(--fg-secondary))] mb-1 uppercase tracking-wide">Needs work</p>
+                  <p className="text-xs font-medium text-fg-secondary mb-1 uppercase tracking-wide">Needs work</p>
                   {latestWeekly.improvement_areas.map((a, i) => (
-                    <p key={i} className="text-xs text-[hsl(var(--fg-secondary))]">→ {a}</p>
+                    <p key={i} className="text-xs text-fg-secondary">→ {a}</p>
                   ))}
                 </div>
               )}
@@ -102,16 +103,16 @@ export default function AnalysisPage() {
           )}
 
           {!weekliesLoading && latestWeekly && latestWeekly.generation_status === "in_progress" && (
-            <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-4 flex items-center gap-3">
-              <RefreshCw size={14} className="animate-spin text-[hsl(var(--fg-secondary))]" />
-              <p className="text-sm text-[hsl(var(--fg-secondary))]">Generating weekly review…</p>
+            <div className="rounded-xl border border-border bg-surface p-4 flex items-center gap-3">
+              <RefreshCw size={14} className="animate-spin text-fg-secondary" />
+              <p className="text-sm text-fg-secondary">Generating weekly review…</p>
             </div>
           )}
         </div>
 
         {/* Right: Insight feed */}
         <div className="lg:col-span-2 flex flex-col gap-4">
-          <h2 className="text-sm font-semibold text-[hsl(var(--fg-secondary))] uppercase tracking-wider">
+          <h2 className="text-sm font-semibold text-fg-secondary uppercase tracking-wider">
             Recent Insights
           </h2>
 
@@ -124,12 +125,13 @@ export default function AnalysisPage() {
           )}
 
           {!recsLoading && (!recs || recs.length === 0) && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-              <Brain size={36} className="text-[hsl(var(--fg-secondary))]" />
-              <p className="text-[hsl(var(--fg-secondary))] text-sm">
-                Complete a daily check-in to generate your first AI analysis.
-              </p>
-            </div>
+            <EmptyState
+              icon={Brain}
+              title="No insights yet"
+              description="Each completed daily check-in is analysed for patterns and a concrete next step. They collect here."
+              action={{ label: "Start a check-in", href: "/checkin" }}
+              className="py-16"
+            />
           )}
 
           {!recsLoading && recs && recs.length > 0 && (

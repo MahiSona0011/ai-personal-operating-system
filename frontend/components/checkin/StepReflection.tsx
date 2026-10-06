@@ -2,6 +2,7 @@
 import { useState, KeyboardEvent } from "react";
 import { X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { tokenColor } from "@/lib/utils/color";
 
 interface TagInputProps {
   label: string;
@@ -49,7 +50,7 @@ function TagInput({ label, description, tags, onChange, placeholder, color }: Ta
               <span
                 key={i}
                 className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
-                style={{ backgroundColor: `${color}20`, color }}
+                style={{ backgroundColor: `color-mix(in srgb, ${color} 14%, transparent)`, color }}
               >
                 {tag}
                 <button
@@ -109,7 +110,7 @@ export function StepReflection({ wins, blockers, actionPlan, onChange }: StepRef
         tags={wins}
         onChange={(tags) => onChange("wins", tags)}
         placeholder="Add a win..."
-        color="hsl(142 71% 45%)"
+        color={tokenColor("success-fg")}
       />
       <TagInput
         label="Blockers"
@@ -117,7 +118,7 @@ export function StepReflection({ wins, blockers, actionPlan, onChange }: StepRef
         tags={blockers}
         onChange={(tags) => onChange("blockers", tags)}
         placeholder="Add a blocker..."
-        color="hsl(0 84% 60%)"
+        color={tokenColor("destructive-fg")}
       />
       <TagInput
         label="Action Plan"
@@ -125,7 +126,7 @@ export function StepReflection({ wins, blockers, actionPlan, onChange }: StepRef
         tags={actionPlan}
         onChange={(tags) => onChange("actionPlan", tags)}
         placeholder="Add an action..."
-        color="hsl(250 84% 67%)"
+        color={tokenColor("accent-fg")}
       />
     </div>
   );

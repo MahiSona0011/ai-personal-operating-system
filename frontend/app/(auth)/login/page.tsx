@@ -32,11 +32,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <main className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gradient">AI-POS</h1>
-          <p className="text-muted-foreground text-sm mt-2">Sign in to your personal OS</p>
+          <h1 className="text-2xl font-bold text-gradient">Selfstack</h1>
+          <p className="text-muted-foreground text-sm mt-2">Sign in to your account</p>
         </div>
 
         <div className="bg-surface border border-border rounded-lg p-6 space-y-4">
@@ -44,17 +44,20 @@ export default function LoginPage() {
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Email</label>
               <Input type="email" placeholder="you@example.com" {...register("email")} />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-destructive-fg">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Password</label>
-              <Input type="password" placeholder="••••••••" {...register("password")} />
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+              <div className="flex items-center justify-between">
+                <label htmlFor="login-password" className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Password</label>
+                <Link href="/forgot-password" className="text-xs text-accent-fg hover:underline">Forgot password?</Link>
+              </div>
+              <Input id="login-password" type="password" placeholder="••••••••" {...register("password")} />
+              {errors.password && <p className="text-xs text-destructive-fg">{errors.password.message}</p>}
             </div>
 
             {error && (
-              <div className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
+              <div className="text-xs text-destructive-fg bg-destructive/10 border border-destructive/20 rounded-md p-3">
                 {error}
               </div>
             )}
@@ -67,13 +70,13 @@ export default function LoginPage() {
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               No account?{" "}
-              <Link href="/register" className="text-accent hover:underline">
+              <Link href="/register" className="text-accent-fg underline underline-offset-2 hover:no-underline">
                 Create one
               </Link>
             </p>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

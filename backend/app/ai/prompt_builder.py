@@ -5,12 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.checkin import DailyCheckin
 from app.models.habit import Habit, HabitLog
 from app.models.goal import Goal
+from app.core.areas import AREA_SLUG_BY_ID
 
 AREA_SCORE_FIELDS = [
-    "score_discipline", "score_focus", "score_learning", "score_career",
-    "score_health", "score_mental", "score_social", "score_financial",
+    "score_health", "score_mind", "score_relationships",
+    "score_work", "score_money", "score_growth",
 ]
-AREA_SLUGS = ["discipline", "focus", "learning", "career", "health", "mental", "social", "financial"]
+AREA_SLUGS = ["health", "mind", "relationships", "work", "money", "growth"]
 
 
 def _format_scores(checkin: DailyCheckin) -> str:
@@ -60,12 +61,12 @@ async def build_daily_context(db: AsyncSession, checkin: DailyCheckin, user_id: 
     goals = list(goals_rows.all())
 
     habits_str = "\n".join(
-        f"{h.current_streak}d | {h.title} | area_id:{h.life_area_id}"
+        f"{h.current_streak}d | {h.title} | {AREA_SLUG_BY_ID.get(h.life_area_id, 'other')}"
         for h in habits
     ) or "No active habits"
 
     goals_str = "\n".join(
-        f"{int(g.progress_pct)}% | {g.title} | area_id:{g.life_area_id}"
+        f"{int(g.progress_pct)}% | {g.title} | {AREA_SLUG_BY_ID.get(g.life_area_id, 'other')}"
         for g in goals
     ) or "No active goals"
 
@@ -133,7 +134,7 @@ async def build_weekly_context(
     )
     logs = list(habit_logs.all())
     habits_total = len(logs)
-    habits_completed = sum(1 for l in logs if l.status == "completed")
+    habits_completed = sum(1 for log in logs if log.status == "completed")
 
     from app.models.session import WorkSession
     sessions = await db.scalars(

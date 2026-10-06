@@ -3,7 +3,9 @@ import { useState } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LIFE_AREAS } from "@/types";
+import { asString } from "@/lib/utils/parse";
 import type { AIRecommendation } from "@/types";
+import { tokenColor } from "@/lib/utils/color";
 
 const SUGGESTED_QUESTIONS = [
   "What habit is having the biggest positive impact this week?",
@@ -22,6 +24,8 @@ export function OnDemandPanel({ onSubmit, isLoading, result }: OnDemandPanelProp
   const [question, setQuestion] = useState("");
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
 
+  const caveat = asString((result?.raw_response as Record<string, unknown> | undefined)?.caveat);
+
   function toggleArea(slug: string) {
     setSelectedAreas((prev) =>
       prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug],
@@ -35,8 +39,8 @@ export function OnDemandPanel({ onSubmit, isLoading, result }: OnDemandPanelProp
   }
 
   return (
-    <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] p-5 flex flex-col gap-4">
-      <h3 className="font-semibold text-[hsl(var(--fg-primary))]">Ask your AI coach</h3>
+    <div className="rounded-xl border border-border bg-surface p-5 flex flex-col gap-4">
+      <h2 className="font-semibold text-foreground">Ask your AI coach</h2>
 
       {/* Suggested questions */}
       <div className="flex flex-wrap gap-2">
@@ -44,7 +48,7 @@ export function OnDemandPanel({ onSubmit, isLoading, result }: OnDemandPanelProp
           <button
             key={q}
             onClick={() => setQuestion(q)}
-            className="text-xs rounded-full border border-[hsl(var(--border))] px-3 py-1 text-[hsl(var(--fg-secondary))] hover:border-[hsl(var(--accent))] hover:text-[hsl(var(--fg-primary))] transition-colors"
+            className="text-xs rounded-full border border-border px-3 py-1 text-fg-secondary hover:border-accent hover:text-foreground transition-colors"
           >
             {q}
           </button>
@@ -57,7 +61,7 @@ export function OnDemandPanel({ onSubmit, isLoading, result }: OnDemandPanelProp
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Ask anything about your data, patterns, or progress..."
           rows={3}
-          className="w-full resize-none rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--bg-base))] px-3 py-2 text-sm text-[hsl(var(--fg-primary))] placeholder:text-[hsl(var(--fg-secondary))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--accent))]"
+          className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-fg-secondary focus:outline-none focus:ring-1 focus:ring-accent"
         />
 
         {/* Area filter chips */}
@@ -70,7 +74,7 @@ export function OnDemandPanel({ onSubmit, isLoading, result }: OnDemandPanelProp
               className={`text-xs rounded-full px-2.5 py-0.5 border transition-colors ${
                 selectedAreas.includes(a.slug)
                   ? "border-transparent text-white"
-                  : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))]"
+                  : "border-border text-fg-secondary"
               }`}
               style={
                 selectedAreas.includes(a.slug)
@@ -98,21 +102,21 @@ export function OnDemandPanel({ onSubmit, isLoading, result }: OnDemandPanelProp
 
       {/* Result */}
       {result && (
-        <div className="border-t border-[hsl(var(--border))] pt-4 flex flex-col gap-3">
+        <div className="border-t border-border pt-4 flex flex-col gap-3">
           {result.summary && (
-            <p className="text-sm text-[hsl(var(--fg-primary))] leading-relaxed">{result.summary}</p>
+            <p className="text-sm text-foreground leading-relaxed">{result.summary}</p>
           )}
           {result.action_items && result.action_items.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-[hsl(var(--fg-secondary))] mb-1.5 uppercase tracking-wide">Next steps</p>
+              <p className="text-xs font-medium text-fg-secondary mb-1.5 uppercase tracking-wide">Next steps</p>
               <ul className="flex flex-col gap-1">
                 {result.action_items.map((item, i) => {
                   const area = LIFE_AREAS.find((a) => a.slug === item.area);
                   return (
-                    <li key={i} className="flex items-start gap-2 text-xs text-[hsl(var(--fg-primary))]">
+                    <li key={i} className="flex items-start gap-2 text-xs text-foreground">
                       <span
                         className="mt-1 h-1.5 w-1.5 rounded-full shrink-0"
-                        style={{ backgroundColor: area?.color ?? "hsl(var(--accent))" }}
+                        style={{ backgroundColor: area?.color ?? tokenColor("accent") }}
                       />
                       {item.action}
                     </li>
@@ -121,9 +125,9 @@ export function OnDemandPanel({ onSubmit, isLoading, result }: OnDemandPanelProp
               </ul>
             </div>
           )}
-          {(result.raw_response as Record<string, unknown>).caveat && (
-            <p className="text-xs text-[hsl(var(--fg-secondary))] italic">
-              Note: {String((result.raw_response as Record<string, unknown>).caveat)}
+          {caveat && (
+            <p className="text-xs text-fg-secondary italic">
+              Note: {caveat}
             </p>
           )}
         </div>

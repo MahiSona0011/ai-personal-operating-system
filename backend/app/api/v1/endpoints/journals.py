@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, date
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, status
 from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DB
@@ -8,6 +8,18 @@ from app.models.journal import JournalEntry
 from app.schemas.journal import CreateJournalRequest, UpdateJournalRequest, JournalEntryResponse
 
 router = APIRouter(prefix="/journals", tags=["journals"])
+
+
+def _queue_analysis(background_tasks: BackgroundTasks, entry_id: int, user_id: int) -> None:
+    """Summarise the entry in the background; the outcome lands in the entry's ai_status."""
+    from app.ai import ai_service
+    from app.core.database import AsyncSessionLocal
+
+    async def _run():
+        async with AsyncSessionLocal() as bg_db:
+            await ai_service.analyze_journal(bg_db, entry_id, user_id)
+
+    background_tasks.add_task(_run)
 
 
 async def _get_or_404(db, user_id: int, entry_id: int) -> JournalEntry:
@@ -54,10 +66,11 @@ async def list_entries(
 
 
 @router.post("", response_model=JournalEntryResponse, status_code=status.HTTP_201_CREATED)
-async def create(data: CreateJournalRequest, current_user: CurrentUser, db: DB):
-    entry = JournalEntry(user_id=current_user.id, **data.model_dump())
+async def create(data: CreateJournalRequest, background_tasks: BackgroundTasks, current_user: CurrentUser, db: DB):
+    entry = JournalEntry(user_id=current_user.id, ai_status="pending", **data.model_dump())
     db.add(entry)
     await db.flush()
+    _queue_analysis(background_tasks, entry.id, current_user.id)
     return entry
 
 
@@ -67,11 +80,20 @@ async def get_entry(entry_id: int, current_user: CurrentUser, db: DB):
 
 
 @router.patch("/{entry_id}", response_model=JournalEntryResponse)
-async def update(entry_id: int, data: UpdateJournalRequest, current_user: CurrentUser, db: DB):
+async def update(
+    entry_id: int, data: UpdateJournalRequest, background_tasks: BackgroundTasks, current_user: CurrentUser, db: DB
+):
     entry = await _get_or_404(db, current_user.id, entry_id)
-    for field, value in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    text_changed = "content" in changes and changes["content"] != entry.content
+    for field, value in changes.items():
         setattr(entry, field, value)
+    if text_changed:  # tags and titles don't change what the entry says
+        entry.ai_status = "pending"
     await db.flush()
+    await db.refresh(entry)  # updated_at is set by the database; reading it unloaded would 500
+    if text_changed:
+        _queue_analysis(background_tasks, entry.id, current_user.id)
     return entry
 
 

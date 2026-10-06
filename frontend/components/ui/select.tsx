@@ -39,7 +39,7 @@ export function SelectTrigger({ className, children }: { className?: string; chi
       type="button"
       onClick={() => setOpen(!open)}
       className={cn(
-        "flex items-center justify-between w-full h-9 px-3 rounded-md border border-[hsl(var(--border))] bg-transparent text-sm text-foreground hover:bg-[hsl(var(--bg-elevated))] transition-colors focus:outline-none focus:ring-2 focus:ring-[hsl(var(--accent))]",
+        "flex items-center justify-between w-full h-9 px-3 rounded-md border border-border bg-transparent text-sm text-foreground hover:bg-elevated transition-colors focus:outline-none focus:ring-2 focus:ring-accent",
         className
       )}
     >
@@ -71,7 +71,7 @@ export function SelectContent({ className, children }: { className?: string; chi
     <div
       ref={ref}
       className={cn(
-        "absolute z-50 top-full mt-1 w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] shadow-lg py-1 max-h-60 overflow-y-auto",
+        "absolute z-50 top-full mt-1 w-full rounded-md border border-border bg-surface shadow-lg py-1 max-h-60 overflow-y-auto",
         className
       )}
     >
@@ -86,8 +86,8 @@ export function SelectItem({ value, children, className }: { value: string; chil
     <div
       onClick={() => { onValueChange?.(value); setOpen(false); }}
       className={cn(
-        "px-3 py-2 text-sm cursor-pointer hover:bg-[hsl(var(--bg-elevated))] transition-colors",
-        selected === value && "text-[hsl(var(--accent))] font-medium",
+        "px-3 py-2 text-sm cursor-pointer hover:bg-elevated transition-colors",
+        selected === value && "text-accent-fg font-medium",
         className
       )}
     >

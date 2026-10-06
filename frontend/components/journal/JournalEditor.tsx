@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LIFE_AREAS, MOOD_TAGS } from "@/types";
 import type { JournalEntry } from "@/types";
+import { cn } from "@/lib/utils/cn";
 
 interface JournalEditorProps {
   initial?: JournalEntry;
@@ -17,14 +18,16 @@ interface JournalEditorProps {
   }) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  /** Text to start a new entry with (e.g. a reflection prompt). Ignored when editing. */
+  initialContent?: string;
 }
 
-export function JournalEditor({ initial, onSave, onCancel, isLoading }: JournalEditorProps) {
+export function JournalEditor({ initial, onSave, onCancel, isLoading, initialContent }: JournalEditorProps) {
   const [entryDate, setEntryDate] = useState(
     initial?.entry_date ?? format(new Date(), "yyyy-MM-dd"),
   );
   const [title, setTitle] = useState(initial?.title ?? "");
-  const [content, setContent] = useState(initial?.content ?? "");
+  const [content, setContent] = useState(initial?.content ?? initialContent ?? "");
   const [moodTag, setMoodTag] = useState<string>(initial?.mood_tag ?? "");
   const [areaTags, setAreaTags] = useState<string[]>(initial?.life_area_tags ?? []);
 
@@ -38,11 +41,11 @@ export function JournalEditor({ initial, onSave, onCancel, isLoading }: JournalE
     } else {
       setEntryDate(format(new Date(), "yyyy-MM-dd"));
       setTitle("");
-      setContent("");
+      setContent(initialContent ?? "");
       setMoodTag("");
       setAreaTags([]);
     }
-  }, [initial]);
+  }, [initial, initialContent]);
 
   function toggleArea(slug: string) {
     setAreaTags((prev) =>
@@ -69,7 +72,7 @@ export function JournalEditor({ initial, onSave, onCancel, isLoading }: JournalE
           type="date"
           value={entryDate}
           onChange={(e) => setEntryDate(e.target.value)}
-          className="rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3 py-1.5 text-sm text-[hsl(var(--fg-primary))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--accent))]"
+          className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
         />
         <Input
           placeholder="Title (optional)"
@@ -85,12 +88,12 @@ export function JournalEditor({ initial, onSave, onCancel, isLoading }: JournalE
         value={content}
         onChange={(e) => setContent(e.target.value)}
         rows={12}
-        className="w-full flex-1 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--bg-surface))] px-3 py-2 text-sm text-[hsl(var(--fg-primary))] placeholder:text-[hsl(var(--fg-secondary))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--accent))] resize-none"
+        className="w-full flex-1 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-fg-secondary focus:outline-none focus:ring-1 focus:ring-accent resize-none"
       />
 
       {/* Mood selector */}
       <div>
-        <p className="text-xs font-medium text-[hsl(var(--fg-secondary))] mb-2">Mood</p>
+        <p className="text-xs font-medium text-fg-secondary mb-2">Mood</p>
         <div className="flex flex-wrap gap-2">
           {MOOD_TAGS.map((m) => (
             <button
@@ -99,8 +102,8 @@ export function JournalEditor({ initial, onSave, onCancel, isLoading }: JournalE
               onClick={() => setMoodTag((prev) => (prev === m.value ? "" : m.value))}
               className={`text-xs rounded-full px-3 py-1 border transition-colors ${
                 moodTag === m.value
-                  ? "border-[hsl(var(--accent))] bg-[hsl(var(--accent)/0.12)] text-[hsl(var(--accent))]"
-                  : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))] hover:border-[hsl(var(--accent)/0.5)]"
+                  ? "border-accent bg-accent/[0.12] text-accent-fg"
+                  : "border-border text-fg-secondary hover:border-accent/50"
               }`}
             >
               {m.label}
@@ -111,7 +114,7 @@ export function JournalEditor({ initial, onSave, onCancel, isLoading }: JournalE
 
       {/* Life area tags */}
       <div>
-        <p className="text-xs font-medium text-[hsl(var(--fg-secondary))] mb-2">Life areas</p>
+        <p className="text-xs font-medium text-fg-secondary mb-2">Life areas</p>
         <div className="flex flex-wrap gap-2">
           {LIFE_AREAS.map((area) => {
             const active = areaTags.includes(area.slug);
@@ -120,20 +123,12 @@ export function JournalEditor({ initial, onSave, onCancel, isLoading }: JournalE
                 key={area.slug}
                 type="button"
                 onClick={() => toggleArea(area.slug)}
-                className={`text-xs rounded-full px-3 py-1 border transition-colors ${
+                className={cn(
+                  "text-xs rounded-full px-3 py-1 border transition-colors",
                   active
-                    ? ""
-                    : "border-[hsl(var(--border))] text-[hsl(var(--fg-secondary))] hover:border-[hsl(var(--accent)/0.5)]"
-                }`}
-                style={
-                  active
-                    ? {
-                        borderColor: area.color,
-                        backgroundColor: `color-mix(in srgb, ${area.color} 15%, transparent)`,
-                        color: area.color,
-                      }
-                    : undefined
-                }
+                    ? `${area.border} ${area.soft} ${area.text}`
+                    : "border-border text-fg-secondary hover:border-accent/50"
+                )}
               >
                 {area.name}
               </button>
